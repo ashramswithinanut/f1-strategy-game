@@ -73,15 +73,34 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
       { x: 75, y: 155 },   // Almost finish
     ];
     
-    // Calculate position based on lap progress and driver position
+    // If driver is pitting, show them in pit lane
+    if (driver.status === 'pitting') {
+      return { x: 70 + (driver.position * 15), y: 175 };
+    }
+    
+    // Calculate position based on race time and driver lap time
     const totalLaps = raceState.totalLaps;
     const currentLap = raceState.currentLap;
-    const lapProgress = Math.min(currentLap / totalLaps, 1);
+    const raceTime = raceState.raceTime || 0;
     
-    // Base position on track based on lap progress
-    const trackPosition = (lapProgress * trackPath.length) % trackPath.length;
+    // Calculate how far through the current lap this driver is
+    // Using a combination of race time and driver performance
+    const lapDuration = 10; // seconds per lap (matches RaceEngine)
+    const timeSinceStart = raceTime;
+    const baseLapProgress = (timeSinceStart / lapDuration) % 1;
+    
+    // Add driver-specific offset based on their position and lap time
+    const positionOffset = (driver.position - 1) * 0.05; // Spread cars out
+    const performanceOffset = (90 - driver.lapTime) * 0.01; // Faster cars ahead
+    
+    // Calculate final lap progress (0 to 1)
+    let lapProgress = baseLapProgress + performanceOffset - positionOffset;
+    lapProgress = Math.max(0, Math.min(1, lapProgress)); // Clamp between 0 and 1
+    
+    // Calculate position on track path
+    const trackPosition = lapProgress * (trackPath.length - 1);
     const baseIndex = Math.floor(trackPosition);
-    const nextIndex = (baseIndex + 1) % trackPath.length;
+    const nextIndex = Math.min(baseIndex + 1, trackPath.length - 1);
     const progress = trackPosition - baseIndex;
     
     // Interpolate between track points
@@ -91,17 +110,12 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
     let baseX = basePoint.x + (nextPoint.x - basePoint.x) * progress;
     let baseY = basePoint.y + (nextPoint.y - basePoint.y) * progress;
     
-    // Offset based on driver position (spread cars out)
-    const positionOffset = (driver.position - 1) * 8; // 8 pixels per position
+    // Add slight offset for race position (spread cars out side-to-side)
+    const sideOffset = (driver.position - 3) * 3; // Center around P3
     const offsetAngle = Math.atan2(nextPoint.y - basePoint.y, nextPoint.x - basePoint.x) + Math.PI/2;
     
-    baseX += Math.cos(offsetAngle) * positionOffset;
-    baseY += Math.sin(offsetAngle) * positionOffset;
-    
-    // If driver is pitting, show them in pit lane
-    if (driver.status === 'pitting') {
-      return { x: 70 + (driver.position * 15), y: 175 };
-    }
+    baseX += Math.cos(offsetAngle) * sideOffset;
+    baseY += Math.sin(offsetAngle) * sideOffset;
     
     return { x: baseX, y: baseY };
   };
