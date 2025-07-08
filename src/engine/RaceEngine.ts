@@ -4,8 +4,11 @@ export class RaceEngine {
   private raceState: RaceState;
   private intervalId: number | null = null;
   private lapDuration: number = 10000; // 10 seconds per lap in demo mode
+  private updateInterval: number = 100; // Update every 100ms for smooth movement
   private isRunning: boolean = false;
   private eventHandlers: Map<string, (data: any) => void> = new Map();
+  private startTime: number = 0;
+  private lapStartTime: number = 0;
 
   constructor(initialState: RaceState) {
     this.raceState = { ...initialState };
@@ -45,6 +48,8 @@ export class RaceEngine {
     
     this.isRunning = true;
     this.raceState.isActive = true;
+    this.startTime = Date.now();
+    this.lapStartTime = Date.now();
     
     // Add race start events
     this.addEvent({
@@ -59,11 +64,11 @@ export class RaceEngine {
       severity: 'info'
     });
     
-    console.log(`[RaceEngine] Starting race loop with ${this.lapDuration}ms intervals`);
+    console.log(`[RaceEngine] Starting race loop with ${this.updateInterval}ms intervals`);
     
     this.intervalId = window.setInterval(() => {
       this.updateRaceState();
-    }, this.lapDuration);
+    }, this.updateInterval);
     
     this.emit('raceStarted', this.raceState);
     console.log(`[RaceEngine] Race started successfully`);
@@ -123,6 +128,10 @@ export class RaceEngine {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+    
+    // Reset timing variables
+    this.startTime = 0;
+    this.lapStartTime = 0;
     
     // Reset race state to initial values
     this.raceState.currentLap = 1;
@@ -219,49 +228,60 @@ export class RaceEngine {
     // - Check for random events
     // - Update weather conditions
     
-    console.log(`[RaceEngine] updateRaceState called - Before increment: currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}, isRunning=${this.isRunning}`);
-    
     if (!this.isRunning) {
       console.log(`[RaceEngine] updateRaceState called but race is not running - ignoring`);
       return;
     }
     
-    this.raceState.currentLap++;
-    this.raceState.raceTime += this.lapDuration / 1000;
+    // Update race time continuously
+    const currentTime = Date.now();
+    const elapsedTime = currentTime - this.startTime;
+    this.raceState.raceTime = elapsedTime / 1000; // Convert to seconds
     
-    console.log(`[RaceEngine] After increment: currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}`);
+    // Check if a full lap has passed
+    const timeSinceLastLap = currentTime - this.lapStartTime;
+    const shouldAdvanceLap = timeSinceLastLap >= this.lapDuration;
     
-    // Update driver lap times and positions
-    this.updateDriverPerformance();
-    
-    // Check for random events
-    this.checkForRandomEvents();
-    
-    // Update weather
-    this.updateWeather();
-    
-    // Add lap progression events
-    if (this.raceState.currentLap % 3 === 0) {
-      this.addEvent({
-        type: 'flag',
-        message: `Lap ${this.raceState.currentLap} - Race is heating up! Strategic decisions crucial now.`,
-        severity: 'info'
-      });
+    if (shouldAdvanceLap) {
+      console.log(`[RaceEngine] Advancing lap - currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}`);
+      
+      this.raceState.currentLap++;
+      this.lapStartTime = currentTime;
+      
+      // Update driver lap times and positions (only on lap completion)
+      this.updateDriverPerformance();
+      
+      // Check for random events (only on lap completion)
+      this.checkForRandomEvents();
+      
+      // Update weather (only on lap completion)
+      this.updateWeather();
+      
+      // Add lap progression events
+      if (this.raceState.currentLap % 3 === 0) {
+        this.addEvent({
+          type: 'flag',
+          message: `Lap ${this.raceState.currentLap} - Race is heating up! Strategic decisions crucial now.`,
+          severity: 'info'
+        });
+      }
+      
+      // Check for race completion
+      if (this.raceState.currentLap > this.raceState.totalLaps) {
+        console.log(`[RaceEngine] Race finished! currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}`);
+        this.addEvent({
+          type: 'flag',
+          message: `🏁 RACE FINISHED! Final lap completed!`,
+          severity: 'critical'
+        });
+        this.stop();
+        return;
+      }
+      
+      console.log(`[RaceEngine] Lap ${this.raceState.currentLap} of ${this.raceState.totalLaps} completed`);
     }
     
-    // Check for race completion
-    if (this.raceState.currentLap > this.raceState.totalLaps) {
-      console.log(`[RaceEngine] Race finished! currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}`);
-      this.addEvent({
-        type: 'flag',
-        message: `🏁 RACE FINISHED! Final lap completed!`,
-        severity: 'critical'
-      });
-      this.stop();
-      return;
-    }
-    
-    console.log(`[RaceEngine] Race continues... currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}`);
+    // Always emit race state updated for smooth car movement
     this.emit('raceStateUpdated', this.raceState);
   }
 
