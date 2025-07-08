@@ -496,22 +496,8 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
             const teamColor = driver.team === 'volley' ? '#FFD700' : 
                              driver.team === 'storm' ? '#1E3A8A' : '#7C3AED';
             
-            // Enhanced position calculation
-            let position;
-            if (driver.status === 'pitting') {
-              // Position in pit lane
-              position = { x: 70 + (index * 30), y: 175 };
-            } else {
-              // Normal track positions based on the detailed track path
-              const trackPositions = [
-                { x: 65, y: 140 },   // P1 - Start/Finish area
-                { x: 75, y: 142 },   // P2
-                { x: 85, y: 144 },   // P3
-                { x: 95, y: 146 },   // P4
-                { x: 105, y: 148 },  // P5
-              ];
-              position = trackPositions[driver.position - 1] || trackPositions[4];
-            }
+            // Use the animated position system
+            const position = getDriverPosition(driver, index);
             
             const isSwapping = positionSwapAnimating.includes(driver.id);
             const isPitting = driver.status === 'pitting';
@@ -564,60 +550,60 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                 <circle
                   cx={position.x}
                   cy={position.y}
-                  r="4"
+                  r="6"
                   fill={teamColor}
                   stroke={isPlayer ? '#FFD700' : '#C0C0C0'}
-                  strokeWidth="1"
-                  className={`transition-all duration-100 ${pulseAnimation} ${pittingAnimation} ${isSwapping ? 'animate-pulse' : ''}`}
+                  strokeWidth="2"
+                  className={`transition-all duration-500 ${pulseAnimation} ${pittingAnimation} ${isSwapping ? 'animate-pulse' : ''}`}
                 />
                 <text
                   x={position.x}
                   y={position.y}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize="6"
+                  fontSize="8"
                   fill="white"
                   fontWeight="bold"
-                  className="transition-all duration-100"
+                  className="transition-all duration-500"
                 >
                   {driver.position}
                 </text>
                 
                 {/* Speed indicator trail */}
                 <circle
-                  cx={position.x - 2}
+                  cx={position.x - 3}
+                  cy={position.y}
+                  r="1.5"
+                  fill={teamColor}
+                  opacity="0.6"
+                  className="transition-all duration-700"
+                />
+                <circle
+                  cx={position.x - 6}
                   cy={position.y}
                   r="1"
                   fill={teamColor}
-                  opacity="0.6"
-                  className="transition-all duration-200"
-                />
-                <circle
-                  cx={position.x - 4}
-                  cy={position.y}
-                  r="0.5"
-                  fill={teamColor}
                   opacity="0.3"
-                  className="transition-all duration-300"
+                  className="transition-all duration-1000"
                 />
                 
                 {/* Speed display */}
                 <text
-                  x={position.x + 8}
+                  x={position.x + 12}
                   y={position.y - 2}
-                  fontSize="6"
+                  fontSize="7"
                   fill="#00FF41"
                   fontWeight="bold"
-                  className="transition-all duration-100"
+                  className="transition-all duration-500"
                 >
                   {driver.speed}
                 </text>
                 <text
-                  x={position.x + 8}
-                  y={position.y + 4}
-                  fontSize="4"
+                  x={position.x + 12}
+                  y={position.y + 6}
+                  fontSize="5"
                   fill="#00FF41"
-                  className="transition-all duration-100"
+                  className="transition-all duration-500"
                 >
                   km/h
                 </text>
