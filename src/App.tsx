@@ -1,28 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import { RaceState, UIState, GamePhase } from './types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { UIState, GamePhase, VoiceCommand } from './types';
 
 // Import components from each team (will be implemented by teams)
 import TrackVisualization from './components/Track/TrackVisualization';
 import StrategyFeed from './components/StrategyFeed/StrategyFeed';
 import VoiceInterface from './components/Voice/VoiceInterface';
-import RaceEngine from './engine/RaceEngine';
+import { useRaceEngine } from './hooks/useRaceEngine';
+import { useVoiceSystem } from './hooks/useVoiceSystem';
 
 // Mock data for development
-import { mockRaceState, mockUIState } from './data/mockData';
+import { mockUIState } from './data/mockData';
 
 function App() {
-  const [raceState, setRaceState] = useState<RaceState>(mockRaceState);
   const [uiState, setUIState] = useState<UIState>(mockUIState);
   const [gamePhase, setGamePhase] = useState<GamePhase>({
     phase: 'pre-race',
     timeRemaining: 10,
     canPause: true
   });
+  
+  // Handle race end event - memoized to prevent infinite re-renders
+  const handleRaceEnd = useCallback(() => {
+    setGamePhase(prev => ({ ...prev, phase: 'post-race' }));
+  }, []);
+  
+  // Use the race engine hook
+  const { raceState, executeCommand } = useRaceEngine({ 
+    gamePhase, 
+    onRaceEnd: handleRaceEnd 
+  });
+
+  // Use the voice system hook
+  const { 
+    voiceSystemState, 
+    generateDriverResponse, 
+    generateStrategySuggestion,
+    stopAllAudio,
+    isLLMEnabled,
+    isTTSSupported
+  } = useVoiceSystem(raceState);
 
   useEffect(() => {
-    // Initialize race engine
-    const raceEngine = new RaceEngine();
-    
     // Start pre-race countdown
     const countdown = setInterval(() => {
       setGamePhase(prev => {
@@ -34,8 +52,39 @@ function App() {
       });
     }, 1000);
 
-    return () => clearInterval(countdown);
+    return () => {
+      clearInterval(countdown);
+    };
   }, []);
+
+  // Handle voice commands by passing them to the race engine and generating responses
+  const handleVoiceCommand = useCallback(async (command: VoiceCommand) => {
+    console.log('Voice command received:', command);
+    
+    // Execute the command in the race engine
+    executeCommand(command);
+    
+    // Generate driver response through voice system
+    await generateDriverResponse(command);
+    
+    // Update UI state to show last command
+    setUIState(prev => ({ ...prev, lastCommand: command }));
+  }, [executeCommand, generateDriverResponse]);
+
+  // Handle pause/resume
+  const handlePauseToggle = useCallback(() => {
+    if (gamePhase.phase === 'race') {
+      setGamePhase(prev => ({ ...prev, canPause: !prev.canPause }));
+      if (!gamePhase.canPause) {
+        stopAllAudio();
+      }
+    }
+  }, [gamePhase.phase, gamePhase.canPause, stopAllAudio]);
+
+  // Handle strategy suggestion request
+  const handleRequestStrategy = useCallback(async () => {
+    await generateStrategySuggestion();
+  }, [generateStrategySuggestion]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pit-wall to-track-green text-white font-racing">
@@ -52,9 +101,26 @@ function App() {
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="flag-indicator flag-green"></div>
+            <div className={`flag-indicator ${
+              raceState.flags === 'green' ? 'flag-green' :
+              raceState.flags === 'yellow' ? 'flag-yellow' :
+              raceState.flags === 'red' ? 'flag-red' : 'flag-blue'
+            }`}></div>
             <div className="text-f1-silver">
-              SILVERSTONE GP
+              SILVERSTONE GP | {raceState.weather.toUpperCase()}
+            </div>
+            
+            {/* Voice System Status */}
+            <div className="flex items-center gap-2">
+              {isLLMEnabled && (
+                <div className="w-3 h-3 bg-f1-green rounded-full" title="LLM Enabled"></div>
+              )}
+              {isTTSSupported && (
+                <div className="w-3 h-3 bg-f1-blue rounded-full" title="TTS Supported"></div>
+              )}
+              {(voiceSystemState.isProcessingCommentary || voiceSystemState.isProcessingDriverResponse || voiceSystemState.isProcessingStrategy) && (
+                <div className="w-3 h-3 bg-f1-yellow rounded-full animate-pulse" title="AI Processing"></div>
+              )}
             </div>
           </div>
         </div>
@@ -76,10 +142,20 @@ function App() {
         {/* Right Panel - Strategy Feed */}
         <div className="w-1/2 p-4">
           <div className="panel h-full">
-            <h2 className="panel-header">📊 STRATEGY COMMAND</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="panel-header">📊 STRATEGY COMMAND</h2>
+              <button
+                onClick={handleRequestStrategy}
+                className="btn-secondary text-sm"
+                disabled={voiceSystemState.isProcessingStrategy}
+              >
+                Request Strategy
+              </button>
+            </div>
             <StrategyFeed 
               raceState={raceState}
               uiState={uiState}
+              voiceSystemState={voiceSystemState}
             />
           </div>
         </div>
@@ -88,14 +164,23 @@ function App() {
       {/* Voice Interface Overlay */}
       <VoiceInterface 
         isListening={uiState.isVoiceListening}
-        onCommand={(command) => {
-          console.log('Voice command received:', command);
-          // This will be handled by the Voice & AI team
-        }}
+        onCommand={handleVoiceCommand}
         onStateChange={(listening) => {
           setUIState(prev => ({ ...prev, isVoiceListening: listening }));
         }}
       />
+
+      {/* Game Controls */}
+      {gamePhase.phase === 'race' && (
+        <div className="fixed bottom-4 left-4 z-30">
+          <button
+            onClick={handlePauseToggle}
+            className="btn-secondary"
+          >
+            {gamePhase.canPause ? '⏸️ Pause' : '▶️ Resume'}
+          </button>
+        </div>
+      )}
 
       {/* Pre-race Countdown Overlay */}
       {gamePhase.phase === 'pre-race' && (
@@ -106,6 +191,33 @@ function App() {
             </div>
             <div className="text-2xl text-f1-silver">
               Race starts in...
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Post-race Results Overlay */}
+      {gamePhase.phase === 'post-race' && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="text-6xl font-bold text-f1-yellow mb-4">
+              🏁 RACE FINISHED!
+            </div>
+            <div className="text-2xl text-f1-silver mb-4">
+              Final Results
+            </div>
+            <div className="space-y-2">
+              {raceState.drivers
+                .sort((a, b) => a.position - b.position)
+                .slice(0, 3)
+                .map((driver, index) => (
+                  <div key={driver.id} className="text-xl">
+                    {index + 1}. {driver.name} - {driver.team}
+                  </div>
+                ))}
+            </div>
+            <div className="mt-4 text-f1-silver">
+              Last Commentary: "{voiceSystemState.lastCommentary}"
             </div>
           </div>
         </div>

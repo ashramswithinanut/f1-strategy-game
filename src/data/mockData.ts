@@ -116,9 +116,9 @@ export const mockTeams: Team[] = [
 
 // Mock Race State
 export const mockRaceState: RaceState = {
-  currentLap: 15,
-  totalLaps: 52,
-  raceTime: 1234, // seconds
+  currentLap: 1,
+  totalLaps: 10,
+  raceTime: 0, // seconds
   weather: 'cloudy',
   trackCondition: 'dry',
   flags: 'green',
@@ -128,21 +128,21 @@ export const mockRaceState: RaceState = {
     {
       id: 'event-1',
       type: 'pit-stop',
-      lap: 12,
-      message: 'Marco Rossi pits for fresh tyres',
+      lap: 1,
+      message: 'Race is starting...',
       severity: 'info',
       timestamp: Date.now() - 180000
     },
     {
       id: 'event-2',
       type: 'weather',
-      lap: 14,
-      message: 'Light rain expected in 5 laps',
-      severity: 'warning',
+      lap: 1,
+      message: 'Weather looks good for racing',
+      severity: 'info',
       timestamp: Date.now() - 120000
     }
   ],
-  isActive: true,
+  isActive: false,
   isPaused: false
 };
 

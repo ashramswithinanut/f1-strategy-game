@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
 import { RaceState, UIState, Driver, RaceEvent } from '../../types';
 
+interface VoiceSystemState {
+  lastCommentary: string;
+  lastDriverResponse: string;
+  lastStrategySuggestion: string;
+  audioEvents: any[];
+  isProcessingCommentary: boolean;
+  isProcessingDriverResponse: boolean;
+  isProcessingStrategy: boolean;
+}
+
 interface StrategyFeedProps {
   raceState: RaceState;
   uiState: UIState;
+  voiceSystemState: VoiceSystemState;
 }
 
-const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState }) => {
-  const [activeTab, setActiveTab] = useState<'timing' | 'events' | 'strategy'>('timing');
+const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSystemState }) => {
+  const [activeTab, setActiveTab] = useState<'timing' | 'events' | 'strategy' | 'voice'>('timing');
   
   // TODO: Computer 1 - Implement strategy feed panels
   // This should show:
@@ -86,6 +97,16 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState }) => {
       <div className="space-y-2">
         <div className="panel-header text-sm">🎯 STRATEGY</div>
         
+        {/* AI Strategy Suggestion */}
+        {voiceSystemState.lastStrategySuggestion && (
+          <div className="bg-f1-green/20 border border-f1-green/50 rounded p-2">
+            <div className="text-xs text-f1-green mb-1">AI Strategy Suggestion</div>
+            <div className="text-f1-silver text-sm">
+              {voiceSystemState.lastStrategySuggestion}
+            </div>
+          </div>
+        )}
+
         {/* Weather Forecast */}
         <div className="bg-pit-wall/50 rounded p-2">
           <div className="text-xs text-f1-silver mb-1">Weather Forecast</div>
@@ -135,6 +156,60 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState }) => {
     );
   };
 
+  const renderVoicePanel = () => {
+    return (
+      <div className="space-y-2">
+        <div className="panel-header text-sm">🎤 VOICE SYSTEM</div>
+        
+        {/* Last Commentary */}
+        {voiceSystemState.lastCommentary && (
+          <div className="bg-f1-blue/20 border border-f1-blue/50 rounded p-2">
+            <div className="text-xs text-f1-blue mb-1">Latest Commentary</div>
+            <div className="text-f1-silver text-sm">
+              "{voiceSystemState.lastCommentary}"
+            </div>
+          </div>
+        )}
+
+        {/* Last Driver Response */}
+        {voiceSystemState.lastDriverResponse && (
+          <div className="bg-f1-yellow/20 border border-f1-yellow/50 rounded p-2">
+            <div className="text-xs text-f1-yellow mb-1">Driver Response</div>
+            <div className="text-f1-silver text-sm">
+              "{voiceSystemState.lastDriverResponse}"
+            </div>
+          </div>
+        )}
+
+        {/* Audio Events */}
+        <div className="bg-pit-wall/50 rounded p-2">
+          <div className="text-xs text-f1-silver mb-1">Recent Audio Events</div>
+          <div className="max-h-32 overflow-y-auto space-y-1">
+            {voiceSystemState.audioEvents.slice(-5).map(event => (
+              <div key={event.id} className="text-xs">
+                <span className="text-f1-yellow">{event.speaker}:</span>
+                <span className="text-f1-silver ml-1">{event.message}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Processing Status */}
+        {(voiceSystemState.isProcessingCommentary || voiceSystemState.isProcessingDriverResponse || voiceSystemState.isProcessingStrategy) && (
+          <div className="bg-f1-red/20 border border-f1-red/50 rounded p-2">
+            <div className="text-xs text-f1-red flex items-center gap-2">
+              <div className="animate-spin">⚙️</div>
+              AI Processing...
+              {voiceSystemState.isProcessingCommentary && " (Commentary)"}
+              {voiceSystemState.isProcessingDriverResponse && " (Driver Response)"}
+              {voiceSystemState.isProcessingStrategy && " (Strategy)"}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Tab Navigation */}
@@ -142,7 +217,8 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState }) => {
         {[
           { id: 'timing', label: '⏱️ Timing' },
           { id: 'events', label: '📢 Events' },
-          { id: 'strategy', label: '🎯 Strategy' }
+          { id: 'strategy', label: '🎯 Strategy' },
+          { id: 'voice', label: '🎤 Voice' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -163,6 +239,7 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState }) => {
         {activeTab === 'timing' && renderTimingData()}
         {activeTab === 'events' && renderEventsFeed()}
         {activeTab === 'strategy' && renderStrategyPanel()}
+        {activeTab === 'voice' && renderVoicePanel()}
       </div>
 
       {/* Voice Command Status */}
