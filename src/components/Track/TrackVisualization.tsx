@@ -78,46 +78,60 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
       return { x: 70 + (driver.position * 15), y: 175 };
     }
     
-    // Calculate position based on race time and driver lap time
-    const totalLaps = raceState.totalLaps;
-    const currentLap = raceState.currentLap;
+    // Get current race time and calculate smooth progress
     const raceTime = raceState.raceTime || 0;
+    const lapDuration = 10; // 10 seconds per lap
     
-    // Calculate how far through the current lap this driver is
-    // Using a combination of race time and driver performance
-    const lapDuration = 10; // seconds per lap (matches RaceEngine)
-    const timeSinceStart = raceTime;
-    const baseLapProgress = (timeSinceStart / lapDuration) % 1;
+    // Calculate base lap progress (0 to 1) - this should be smooth
+    const rawLapProgress = (raceTime / lapDuration) % 1;
     
-    // Add driver-specific offset based on their position and lap time
-    const positionOffset = (driver.position - 1) * 0.05; // Spread cars out
-    const performanceOffset = (90 - driver.lapTime) * 0.01; // Faster cars ahead
+    // Add driver-specific variations for realistic racing
+    const positionOffset = (driver.position - 1) * 0.02; // Small spread based on position
+    const performanceOffset = (87 - driver.lapTime) * 0.005; // Faster drivers slightly ahead
     
-    // Calculate final lap progress (0 to 1)
-    let lapProgress = baseLapProgress + performanceOffset - positionOffset;
-    lapProgress = Math.max(0, Math.min(1, lapProgress)); // Clamp between 0 and 1
+    // Calculate final smooth lap progress
+    let lapProgress = rawLapProgress + performanceOffset - positionOffset;
     
-    // Calculate position on track path
-    const trackPosition = lapProgress * (trackPath.length - 1);
-    const baseIndex = Math.floor(trackPosition);
-    const nextIndex = Math.min(baseIndex + 1, trackPath.length - 1);
-    const progress = trackPosition - baseIndex;
+    // Ensure lapProgress stays in bounds and wraps around smoothly
+    lapProgress = ((lapProgress % 1) + 1) % 1; // Handle negative values properly
     
-    // Interpolate between track points
-    const basePoint = trackPath[baseIndex];
+    // Calculate smooth position along track path
+    const totalPathLength = trackPath.length - 1;
+    const smoothTrackPosition = lapProgress * totalPathLength;
+    
+    // Get the two points to interpolate between
+    const baseIndex = Math.floor(smoothTrackPosition);
+    const nextIndex = (baseIndex + 1) % trackPath.length;
+    const interpolationFactor = smoothTrackPosition - baseIndex;
+    
+    // Get the current and next points
+    const currentPoint = trackPath[baseIndex];
     const nextPoint = trackPath[nextIndex];
     
-    let baseX = basePoint.x + (nextPoint.x - basePoint.x) * progress;
-    let baseY = basePoint.y + (nextPoint.y - basePoint.y) * progress;
+    // Smooth interpolation between points
+    const baseX = currentPoint.x + (nextPoint.x - currentPoint.x) * interpolationFactor;
+    const baseY = currentPoint.y + (nextPoint.y - currentPoint.y) * interpolationFactor;
     
-    // Add slight offset for race position (spread cars out side-to-side)
-    const sideOffset = (driver.position - 3) * 3; // Center around P3
-    const offsetAngle = Math.atan2(nextPoint.y - basePoint.y, nextPoint.x - basePoint.x) + Math.PI/2;
+    // Add slight side-to-side offset for different positions
+    const sideOffset = (driver.position - 3) * 2; // Smaller offset for cleaner look
     
-    baseX += Math.cos(offsetAngle) * sideOffset;
-    baseY += Math.sin(offsetAngle) * sideOffset;
+    // Calculate perpendicular direction for side offset
+    const deltaX = nextPoint.x - currentPoint.x;
+    const deltaY = nextPoint.y - currentPoint.y;
+    const pathLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     
-    return { x: baseX, y: baseY };
+    let finalX = baseX;
+    let finalY = baseY;
+    
+    // Apply side offset perpendicular to track direction
+    if (pathLength > 0) {
+      const perpX = -deltaY / pathLength;
+      const perpY = deltaX / pathLength;
+      finalX += perpX * sideOffset;
+      finalY += perpY * sideOffset;
+    }
+    
+    return { x: finalX, y: finalY };
   };
 
   const renderDriverCar = (driver: any, index: number) => {
