@@ -78,60 +78,43 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
       return { x: 70 + (driver.position * 15), y: 175 };
     }
     
-    // Get current race time and calculate smooth progress
+    // Simple, smooth calculation based on race time
     const raceTime = raceState.raceTime || 0;
     const lapDuration = 10; // 10 seconds per lap
     
-    // Calculate base lap progress (0 to 1) - this should be smooth
-    const rawLapProgress = (raceTime / lapDuration) % 1;
+    // Pure continuous progress (0 to 1) around the track
+    const baseProgress = (raceTime / lapDuration) % 1;
     
-    // Add driver-specific variations for realistic racing
-    const positionOffset = (driver.position - 1) * 0.02; // Small spread based on position
-    const performanceOffset = (87 - driver.lapTime) * 0.005; // Faster drivers slightly ahead
+    // Very small offset for each driver position (spread them out slightly)
+    const positionSpread = (driver.position - 1) * 0.01; 
     
-    // Calculate final smooth lap progress
-    let lapProgress = rawLapProgress + performanceOffset - positionOffset;
+    // Final smooth progress
+    let progress = baseProgress - positionSpread;
+    if (progress < 0) progress += 1; // Wrap around
     
-    // Ensure lapProgress stays in bounds and wraps around smoothly
-    lapProgress = ((lapProgress % 1) + 1) % 1; // Handle negative values properly
+    // Convert progress to track position (0 to trackPath.length)
+    const trackPosition = progress * trackPath.length;
     
-    // Calculate smooth position along track path
-    const totalPathLength = trackPath.length - 1;
-    const smoothTrackPosition = lapProgress * totalPathLength;
+    // Find the two points to interpolate between
+    const point1Index = Math.floor(trackPosition) % trackPath.length;
+    const point2Index = (point1Index + 1) % trackPath.length;
+    const t = trackPosition - Math.floor(trackPosition); // Interpolation factor
     
-    // Get the two points to interpolate between
-    const baseIndex = Math.floor(smoothTrackPosition);
-    const nextIndex = (baseIndex + 1) % trackPath.length;
-    const interpolationFactor = smoothTrackPosition - baseIndex;
+    // Get the two points
+    const point1 = trackPath[point1Index];
+    const point2 = trackPath[point2Index];
     
-    // Get the current and next points
-    const currentPoint = trackPath[baseIndex];
-    const nextPoint = trackPath[nextIndex];
+    // Smooth linear interpolation
+    const x = point1.x + (point2.x - point1.x) * t;
+    const y = point1.y + (point2.y - point1.y) * t;
     
-    // Smooth interpolation between points
-    const baseX = currentPoint.x + (nextPoint.x - currentPoint.x) * interpolationFactor;
-    const baseY = currentPoint.y + (nextPoint.y - currentPoint.y) * interpolationFactor;
+    // Add tiny side offset for visual separation
+    const sideOffset = (driver.position - 3) * 1.5;
     
-    // Add slight side-to-side offset for different positions
-    const sideOffset = (driver.position - 3) * 2; // Smaller offset for cleaner look
-    
-    // Calculate perpendicular direction for side offset
-    const deltaX = nextPoint.x - currentPoint.x;
-    const deltaY = nextPoint.y - currentPoint.y;
-    const pathLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    
-    let finalX = baseX;
-    let finalY = baseY;
-    
-    // Apply side offset perpendicular to track direction
-    if (pathLength > 0) {
-      const perpX = -deltaY / pathLength;
-      const perpY = deltaX / pathLength;
-      finalX += perpX * sideOffset;
-      finalY += perpY * sideOffset;
-    }
-    
-    return { x: finalX, y: finalY };
+    return { 
+      x: x + sideOffset, 
+      y: y 
+    };
   };
 
   const renderDriverCar = (driver: any, index: number) => {
@@ -582,7 +565,7 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   fill={teamColor}
                   stroke={isPlayer ? '#FFD700' : '#C0C0C0'}
                   strokeWidth="2"
-                  className={`transition-all duration-500 ${pulseAnimation} ${pittingAnimation} ${isSwapping ? 'animate-pulse' : ''}`}
+                  className={`transition-all duration-200 ease-linear ${pulseAnimation} ${pittingAnimation} ${isSwapping ? 'animate-pulse' : ''}`}
                 />
                 <text
                   x={position.x}
@@ -592,7 +575,7 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   fontSize="8"
                   fill="white"
                   fontWeight="bold"
-                  className="transition-all duration-500"
+                  className="transition-all duration-200 ease-linear"
                 >
                   {driver.position}
                 </text>
@@ -604,7 +587,7 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   r="1.5"
                   fill={teamColor}
                   opacity="0.6"
-                  className="transition-all duration-700"
+                  className="transition-all duration-200 ease-linear"
                 />
                 <circle
                   cx={position.x - 6}
@@ -612,7 +595,7 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   r="1"
                   fill={teamColor}
                   opacity="0.3"
-                  className="transition-all duration-1000"
+                  className="transition-all duration-200 ease-linear"
                 />
                 
                 {/* Speed display */}
@@ -622,7 +605,7 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   fontSize="7"
                   fill="#00FF41"
                   fontWeight="bold"
-                  className="transition-all duration-500"
+                  className="transition-all duration-200 ease-linear"
                 >
                   {driver.speed}
                 </text>
@@ -631,7 +614,7 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   y={position.y + 6}
                   fontSize="5"
                   fill="#00FF41"
-                  className="transition-all duration-500"
+                  className="transition-all duration-200 ease-linear"
                 >
                   km/h
                 </text>
