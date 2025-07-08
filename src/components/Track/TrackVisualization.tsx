@@ -51,70 +51,32 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
   
   // Calculate driver positions on track
   const getDriverPosition = (driver: any, index: number) => {
-    // Silverstone track path points (simplified circuit)
-    const trackPath = [
-      { x: 65, y: 140 },   // Start/Finish straight
-      { x: 70, y: 120 },   // Turn 1 approach
-      { x: 85, y: 90 },    // Turn 1-2 complex
-      { x: 110, y: 75 },   // Turn 3-4
-      { x: 140, y: 80 },   // Turn 5-6
-      { x: 170, y: 95 },   // Turn 7-8
-      { x: 195, y: 110 },  // Turn 9-10
-      { x: 220, y: 130 },  // Turn 11-12
-      { x: 240, y: 150 },  // Turn 13
-      { x: 260, y: 165 },  // Turn 14-15
-      { x: 280, y: 175 },  // Turn 16-17
-      { x: 295, y: 185 },  // Turn 18
-      { x: 285, y: 195 },  // Back straight
-      { x: 250, y: 190 },  // Sector 3
-      { x: 200, y: 185 },  // Sector 3 continued
-      { x: 150, y: 175 },  // Approaching finish
-      { x: 100, y: 165 },  // Final sector
-      { x: 75, y: 155 },   // Almost finish
-    ];
-    
     // If driver is pitting, show them in pit lane
     if (driver.status === 'pitting') {
       return { x: 70 + (driver.position * 15), y: 175 };
     }
     
-    // Simple, smooth calculation based on race time
+    // Super simple circular track for smooth movement
+    const centerX = 175;
+    const centerY = 140;
+    const radius = 100;
+    
+    // Get smooth time-based progress
     const raceTime = raceState.raceTime || 0;
     const lapDuration = 10; // 10 seconds per lap
     
-    // Pure continuous progress (0 to 1) around the track
-    const baseProgress = (raceTime / lapDuration) % 1;
+    // Calculate smooth angle around circle (0 to 2π)
+    const baseAngle = (raceTime / lapDuration) * 2 * Math.PI;
     
-    // Very small offset for each driver position (spread them out slightly)
-    const positionSpread = (driver.position - 1) * 0.01; 
+    // Small offset for each driver position
+    const positionOffset = (driver.position - 1) * 0.1;
+    const finalAngle = baseAngle - positionOffset;
     
-    // Final smooth progress
-    let progress = baseProgress - positionSpread;
-    if (progress < 0) progress += 1; // Wrap around
+    // Calculate smooth circular position
+    const x = centerX + Math.cos(finalAngle) * radius;
+    const y = centerY + Math.sin(finalAngle) * radius;
     
-    // Convert progress to track position (0 to trackPath.length)
-    const trackPosition = progress * trackPath.length;
-    
-    // Find the two points to interpolate between
-    const point1Index = Math.floor(trackPosition) % trackPath.length;
-    const point2Index = (point1Index + 1) % trackPath.length;
-    const t = trackPosition - Math.floor(trackPosition); // Interpolation factor
-    
-    // Get the two points
-    const point1 = trackPath[point1Index];
-    const point2 = trackPath[point2Index];
-    
-    // Smooth linear interpolation
-    const x = point1.x + (point2.x - point1.x) * t;
-    const y = point1.y + (point2.y - point1.y) * t;
-    
-    // Add tiny side offset for visual separation
-    const sideOffset = (driver.position - 3) * 1.5;
-    
-    return { 
-      x: x + sideOffset, 
-      y: y 
-    };
+    return { x, y };
   };
 
   const renderDriverCar = (driver: any, index: number) => {
@@ -565,7 +527,7 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   fill={teamColor}
                   stroke={isPlayer ? '#FFD700' : '#C0C0C0'}
                   strokeWidth="2"
-                  className={`transition-all duration-200 ease-linear ${pulseAnimation} ${pittingAnimation} ${isSwapping ? 'animate-pulse' : ''}`}
+                  className={`${pulseAnimation} ${pittingAnimation} ${isSwapping ? 'animate-pulse' : ''}`}
                 />
                 <text
                   x={position.x}
@@ -575,7 +537,6 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   fontSize="8"
                   fill="white"
                   fontWeight="bold"
-                  className="transition-all duration-200 ease-linear"
                 >
                   {driver.position}
                 </text>
@@ -587,7 +548,6 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   r="1.5"
                   fill={teamColor}
                   opacity="0.6"
-                  className="transition-all duration-200 ease-linear"
                 />
                 <circle
                   cx={position.x - 6}
@@ -595,7 +555,6 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   r="1"
                   fill={teamColor}
                   opacity="0.3"
-                  className="transition-all duration-200 ease-linear"
                 />
                 
                 {/* Speed display */}
@@ -605,7 +564,6 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   fontSize="7"
                   fill="#00FF41"
                   fontWeight="bold"
-                  className="transition-all duration-200 ease-linear"
                 >
                   {driver.speed}
                 </text>
@@ -614,7 +572,6 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
                   y={position.y + 6}
                   fontSize="5"
                   fill="#00FF41"
-                  className="transition-all duration-200 ease-linear"
                 >
                   km/h
                 </text>
