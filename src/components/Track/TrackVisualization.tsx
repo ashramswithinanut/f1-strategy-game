@@ -526,8 +526,8 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
             opacity="0.8"
           />
           
-          {/* Pit Lane Label */}
-          <text x="140" y="165" textAnchor="middle" className="text-xs fill-volley-yellow font-bold">
+          {/* Pit Lane Label - moved to clear area */}
+          <text x="140" y="200" textAnchor="middle" className="text-xs fill-volley-yellow font-bold">
             PIT LANE
           </text>
 
