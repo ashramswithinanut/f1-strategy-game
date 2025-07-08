@@ -15,11 +15,41 @@ interface StrategyFeedProps {
   raceState: RaceState;
   uiState: UIState;
   voiceSystemState: VoiceSystemState;
+  onCommand?: (command: any) => void; // Add command handler prop
 }
 
-const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSystemState }) => {
+const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSystemState, onCommand }) => {
   const [activeTab, setActiveTab] = useState<'timing' | 'events' | 'strategy' | 'voice'>('timing');
   
+  // Handle tyre compound selection
+  const handleTyreSelection = (compound: string) => {
+    if (onCommand) {
+      onCommand({
+        type: 'pit-stop',
+        target: 'both',
+        params: { tyreCompound: compound },
+        timestamp: Date.now()
+      });
+    }
+  };
+
+  // Handle quick command execution
+  const handleQuickCommand = (commandType: string) => {
+    if (onCommand) {
+      const commands: { [key: string]: any } = {
+        'box-both': { type: 'pit-stop', target: 'both', params: { tyreCompound: 'medium' } },
+        'push': { type: 'push', target: 'both' },
+        'swap': { type: 'swap-positions', target: 'both' },
+        'conserve': { type: 'conserve', target: 'both' }
+      };
+      
+      const command = commands[commandType];
+      if (command) {
+        onCommand({ ...command, timestamp: Date.now() });
+      }
+    }
+  };
+
   // TODO: Computer 1 - Implement strategy feed panels
   // This should show:
   // - Live timing data
@@ -237,13 +267,21 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSy
 
         {/* Tyre Strategy */}
         <div className="bg-pit-wall/50 rounded p-2">
-          <div className="text-xs text-f1-silver mb-1">Tyre Strategy</div>
+          <div className="text-xs text-f1-silver mb-1">Tyre Strategy - Click to Pit</div>
           <div className="flex gap-2">
             {['soft', 'medium', 'hard'].map(compound => (
-              <div key={compound} className={`tyre-indicator tyre-${compound}`}>
+              <button
+                key={compound}
+                onClick={() => handleTyreSelection(compound)}
+                className={`tyre-indicator tyre-${compound} cursor-pointer hover:scale-110 transition-transform`}
+                title={`Pit for ${compound} tyres`}
+              >
                 {compound[0].toUpperCase()}
-              </div>
+              </button>
             ))}
+          </div>
+          <div className="text-xs text-f1-silver/70 mt-1">
+            Click compound to pit both drivers
           </div>
         </div>
 
@@ -257,16 +295,28 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSy
         <div className="mt-4">
           <div className="text-xs text-f1-silver mb-2">Quick Commands</div>
           <div className="grid grid-cols-2 gap-2">
-            <button className="racing-button secondary text-xs py-1">
+            <button 
+              onClick={() => handleQuickCommand('box-both')}
+              className="racing-button secondary text-xs py-1 hover:bg-f1-red/50 transition-colors"
+            >
               Box Both
             </button>
-            <button className="racing-button secondary text-xs py-1">
+            <button 
+              onClick={() => handleQuickCommand('push')}
+              className="racing-button secondary text-xs py-1 hover:bg-f1-green/50 transition-colors"
+            >
               Push Now
             </button>
-            <button className="racing-button secondary text-xs py-1">
+            <button 
+              onClick={() => handleQuickCommand('swap')}
+              className="racing-button secondary text-xs py-1 hover:bg-f1-yellow/50 transition-colors"
+            >
               Swap Positions
             </button>
-            <button className="racing-button secondary text-xs py-1">
+            <button 
+              onClick={() => handleQuickCommand('conserve')}
+              className="racing-button secondary text-xs py-1 hover:bg-f1-blue/50 transition-colors"
+            >
               Fuel Save
             </button>
           </div>

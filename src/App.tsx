@@ -290,6 +290,7 @@ function App() {
               raceState={raceState}
               uiState={uiState}
               voiceSystemState={voiceSystemState}
+              onCommand={handleVoiceCommand}
             />
           </div>
         </div>

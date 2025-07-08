@@ -398,13 +398,22 @@ export class RaceEngine {
 
   private updatePositions(): void {
     // TODO: Computer 3 - Implement position updates
-    // Sort drivers by total race time (or lap time for simplicity)
-    this.raceState.drivers.sort((a, b) => a.lapTime - b.lapTime);
+    // Sort drivers by total race progress (lap + lap time percentage)
+    this.raceState.drivers.sort((a, b) => {
+      // Calculate total race progress for each driver
+      const aProgress = (this.raceState.currentLap - 1) + (1 - a.lapTime / 120); // 120s max lap time
+      const bProgress = (this.raceState.currentLap - 1) + (1 - b.lapTime / 120);
+      
+      // Sort by total progress (higher progress = better position)
+      return bProgress - aProgress;
+    });
     
-    // Update positions
+    // Update positions based on sort order
     this.raceState.drivers.forEach((driver, index) => {
       driver.position = index + 1;
     });
+    
+    console.log(`[RaceEngine] Updated positions: ${this.raceState.drivers.map(d => `${d.name}:P${d.position}`).join(', ')}`);
   }
 
   private checkForRandomEvents(): void {
@@ -524,19 +533,54 @@ export class RaceEngine {
   }
 
   private executePositionSwap(command: VoiceCommand): void {
-    // TODO: Computer 3 - Implement position swap
-    const playerDrivers = this.raceState.drivers.filter(d => d.isPlayer);
+    // TODO: Computer 3 - Implement realistic position swap
+    const playerDrivers = this.raceState.drivers.filter(d => d.isPlayer).sort((a, b) => a.position - b.position);
     
     if (playerDrivers.length >= 2) {
-      const temp = playerDrivers[0].position;
-      playerDrivers[0].position = playerDrivers[1].position;
-      playerDrivers[1].position = temp;
+      const leadDriver = playerDrivers[0]; // Driver in better position
+      const followDriver = playerDrivers[1]; // Driver in worse position
       
+      console.log(`[RaceEngine] Executing position swap: ${leadDriver.name} (P${leadDriver.position}) letting ${followDriver.name} (P${followDriver.position}) through`);
+      
+      // Realistic swap: lead driver slows down, follow driver speeds up temporarily
+      leadDriver.lapTime += 2.0; // Lead driver loses 2 seconds (slowing down effect)
+      leadDriver.morale = Math.max(0, leadDriver.morale - 5); // Small morale hit for giving up position
+      leadDriver.speed = Math.max(60, leadDriver.speed - 30); // Visible slowdown
+      
+      followDriver.lapTime -= 1.0; // Follow driver gains 1 second (opportunity to pass)
+      followDriver.morale = Math.min(100, followDriver.morale + 5); // Small morale boost
+      followDriver.speed = Math.min(300, followDriver.speed + 20); // Visible speed boost
+      
+      // Add realistic team radio event
       this.addEvent({
-        type: 'pit-stop',
-        message: 'Team orders: drivers swap positions',
-        severity: 'info'
+        type: 'team-orders',
+        message: `📻 Team Orders: "${leadDriver.name}, let ${followDriver.name} through when safe to do so"`,
+        severity: 'warning'
       });
+      
+      // Force position recalculation after performance changes
+      setTimeout(() => {
+        this.updatePositions();
+        
+        // Add follow-up event if swap was successful
+        const newLeadPosition = leadDriver.position;
+        const newFollowPosition = followDriver.position;
+        
+        if (newFollowPosition < newLeadPosition) {
+          this.addEvent({
+            type: 'overtake',
+            message: `🏎️ Position swap complete: ${followDriver.name} now ahead of ${leadDriver.name}`,
+            severity: 'info'
+          });
+        }
+        
+        // Reset speeds to normal after visual effect
+        setTimeout(() => {
+          leadDriver.speed = 0; // Will be recalculated
+          followDriver.speed = 0; // Will be recalculated
+        }, 2000);
+        
+      }, 500); // Small delay for realistic timing
     }
   }
 
