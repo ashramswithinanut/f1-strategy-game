@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom F1 Racing Styles */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Orbitron', monospace;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* Racing HUD Components */
+  .racing-button {
+    @apply bg-f1-red hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg;
+    @apply transition-all duration-200 transform hover:scale-105;
+    @apply border-2 border-f1-silver shadow-lg;
+  }
+  
+  .racing-button:active {
+    @apply scale-95;
+  }
+  
+  .racing-button.secondary {
+    @apply bg-f1-silver hover:bg-gray-300 text-f1-black;
+  }
+  
+  .racing-button.success {
+    @apply bg-f1-green hover:bg-green-400 text-f1-black;
+  }
+  
+  /* Track and Strategy Panels */
+  .panel {
+    @apply bg-pit-wall/90 border-2 border-f1-silver/30 rounded-lg p-4;
+    @apply backdrop-blur-sm shadow-2xl;
+  }
+  
+  .panel-header {
+    @apply text-f1-yellow font-bold text-lg mb-3 border-b border-f1-silver/20 pb-2;
+  }
+  
+  /* Data Display */
+  .data-row {
+    @apply flex justify-between items-center py-1 px-2 rounded;
+    @apply hover:bg-f1-silver/10 transition-colors;
+  }
+  
+  .data-label {
+    @apply text-f1-silver/70 text-sm;
+  }
+  
+  .data-value {
+    @apply text-f1-green font-bold;
+  }
+  
+  /* Racing Indicators */
+  .flag-indicator {
+    @apply w-6 h-4 rounded-sm border border-white/20 animate-pulse-fast;
+  }
+  
+  .flag-green {
+    @apply bg-f1-green;
+  }
+  
+  .flag-yellow {
+    @apply bg-f1-yellow;
+  }
+  
+  .flag-red {
+    @apply bg-f1-red;
+  }
+  
+  .flag-blue {
+    @apply bg-f1-blue;
+  }
+  
+  /* Tyre Compound Indicators */
+  .tyre-indicator {
+    @apply w-8 h-8 rounded-full border-2 border-white/50 flex items-center justify-center;
+    @apply text-xs font-bold text-white;
+  }
+  
+  .tyre-soft {
+    @apply bg-tyre-soft;
+  }
+  
+  .tyre-medium {
+    @apply bg-tyre-medium text-black;
+  }
+  
+  .tyre-hard {
+    @apply bg-tyre-hard text-black;
+  }
+  
+  .tyre-inter {
+    @apply bg-tyre-inter;
+  }
+  
+  .tyre-wet {
+    @apply bg-tyre-wet text-black;
+  }
+  
+  /* Voice Input Indicators */
+  .voice-indicator {
+    @apply w-4 h-4 rounded-full bg-f1-red animate-pulse-fast;
+  }
+  
+  .voice-indicator.listening {
+    @apply bg-f1-green;
+  }
+  
+  .voice-indicator.processing {
+    @apply bg-f1-yellow;
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 10px currentColor;
+  }
+  
+  .racing-gradient {
+    background: linear-gradient(135deg, #DC143C 0%, #FFD700 100%);
+  }
+  
+  .track-gradient {
+    background: linear-gradient(45deg, #1A1A2E 0%, #16213E 50%, #1A1A2E 100%);
+  }
+} 
