@@ -78,10 +78,27 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
             console.log('[Voice] Command parsed:', command);
             onCommand(command);
             setTranscript('');
+            
+            // Auto-restart listening after a brief pause
+            setTimeout(() => {
+              console.log('[Voice] Auto-restarting voice recognition...');
+              if (!speechAPI.getIsListening()) {
+                requestPermissionAndStart();
+              }
+            }, 1500); // 1.5 second delay to allow command processing
+            
             onStateChange(false);
           } else {
             console.log('[Voice] No command recognized in:', result.transcript);
             setError('Command not recognized. Try: "Box both drivers" or "Push now"');
+            
+            // Also auto-restart on unrecognized commands after showing error
+            setTimeout(() => {
+              setError(null);
+              if (!speechAPI.getIsListening()) {
+                requestPermissionAndStart();
+              }
+            }, 2000); // 2 second delay to show error message
           }
         }
       },

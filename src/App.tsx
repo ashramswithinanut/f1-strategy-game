@@ -13,7 +13,7 @@ function App() {
   const [uiState, setUIState] = useState<UIState>(mockUIState);
   const [gamePhase, setGamePhase] = useState<GamePhase>({
     phase: 'pre-race',
-    timeRemaining: 10,
+    timeRemaining: 3,
     canPause: true
   });
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -96,7 +96,7 @@ function App() {
   const handleReset = useCallback(() => {
     console.log('[App] Reset button clicked');
     resetRace();
-    setGamePhase({ phase: 'pre-race', timeRemaining: 10, canPause: true });
+    setGamePhase({ phase: 'pre-race', timeRemaining: 3, canPause: true });
     setCountdownActive(false);
     stopAllAudio();
   }, [resetRace, stopAllAudio]);
@@ -106,7 +106,7 @@ function App() {
     if (gamePhase.phase === 'pre-race') {
       console.log('[App] Start race button clicked');
       setCountdownActive(true);
-      setGamePhase(prev => ({ ...prev, timeRemaining: 10 }));
+      setGamePhase(prev => ({ ...prev, timeRemaining: 3 }));
     }
   }, [gamePhase.phase]);
 

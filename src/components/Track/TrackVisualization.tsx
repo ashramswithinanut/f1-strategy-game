@@ -71,7 +71,28 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
   const getDriverPosition = (driver: any, index: number) => {
     // If driver is pitting, show them in pit lane
     if (driver.status === 'pitting') {
-      return { x: 70 + (driver.position * 15), y: 175 };
+      // Position drivers along the actual pit lane path
+      const pitLaneProgress = (index * 0.2) % 1; // Spread drivers out in pit lane
+      const pitLanePoints = [
+        { x: 70, y: 150 },
+        { x: 90, y: 155 },
+        { x: 110, y: 160 },
+        { x: 130, y: 165 },
+        { x: 150, y: 170 },
+        { x: 170, y: 175 },
+        { x: 190, y: 180 },
+        { x: 210, y: 185 }
+      ];
+      
+      const segmentIndex = Math.floor(pitLaneProgress * (pitLanePoints.length - 1));
+      const segmentRatio = (pitLaneProgress * (pitLanePoints.length - 1)) - segmentIndex;
+      const currentPoint = pitLanePoints[segmentIndex];
+      const nextPoint = pitLanePoints[segmentIndex + 1] || pitLanePoints[pitLanePoints.length - 1];
+      
+      return {
+        x: currentPoint.x + (nextPoint.x - currentPoint.x) * segmentRatio,
+        y: currentPoint.y + (nextPoint.y - currentPoint.y) * segmentRatio
+      };
     }
     
     // Define the actual Silverstone track path points from the SVG
@@ -117,8 +138,10 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
     // Calculate smooth progress around the track (0 to 1)
     const baseProgress = (continuousTime / lapDuration) % 1;
     
-    // Add small position offset for each driver (spread them out)
-    const positionOffset = (driver.position - 1) * 0.015;
+    // FIXED: Better positions (lower numbers) should be ahead on track
+    // P1 gets biggest offset, P2 gets smaller offset, etc.
+    const maxPosition = 5; // Maximum expected position
+    const positionOffset = (maxPosition - driver.position) * 0.02; // Reversed calculation
     const adjustedProgress = (baseProgress + positionOffset) % 1;
     
     // Calculate position along track path with smooth interpolation

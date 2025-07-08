@@ -603,12 +603,22 @@ export class RaceEngine {
   }
 
   private getTargetDrivers(command: VoiceCommand): Driver[] {
+    console.log(`[RaceEngine] Getting target drivers for command: ${command.type}, target: ${command.target}`);
+    
     if (command.target === 'both') {
-      return this.raceState.drivers.filter(d => d.isPlayer);
+      const bothDrivers = this.raceState.drivers.filter(d => d.isPlayer);
+      console.log(`[RaceEngine] Target 'both' - found ${bothDrivers.length} player drivers:`, bothDrivers.map(d => d.name));
+      return bothDrivers;
     }
     
-    const driver = this.raceState.drivers.find(d => d.id === command.target);
-    return driver ? [driver] : [];
+    const targetDriver = this.raceState.drivers.find(d => d.id === command.target);
+    if (targetDriver) {
+      console.log(`[RaceEngine] Target specific driver found: ${targetDriver.name} (${targetDriver.id})`);
+      return [targetDriver];
+    }
+    
+    console.warn(`[RaceEngine] No target driver found for command target: ${command.target}`);
+    return [];
   }
 
   private addEvent(params: { type: string; message: string; severity: 'info' | 'warning' | 'critical' }): void {

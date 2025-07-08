@@ -220,22 +220,33 @@ export class CommandParser {
     const command: VoiceCommand = {
       id: `cmd-${Date.now()}`,
       type: type as any,
-      target: 'both',
+      target: 'both', // Default to both, will be overridden if specific driver mentioned
       params: {},
       timestamp: Date.now(),
       confidence: 0.8
     };
 
-    // Extract driver target
+    // Extract driver target - be more specific about parsing
     if (match[1]) {
       const driverMatch = match[1].toLowerCase();
+      console.log('[CommandParser] Driver match found:', driverMatch);
+      
       if (driverMatch === '1') {
         command.target = 'driver-1';
+        console.log('[CommandParser] Set target to driver-1');
       } else if (driverMatch === '2') {
         command.target = 'driver-2';
+        console.log('[CommandParser] Set target to driver-2');
       } else if (driverMatch === 'both') {
         command.target = 'both';
+        console.log('[CommandParser] Set target to both');
       }
+    }
+
+    // For commands without specific driver mention, check if they should default to both
+    if (!match[1] && ['push', 'conserve', 'defend', 'attack'].includes(type)) {
+      command.target = 'both';
+      console.log('[CommandParser] No driver specified, defaulting to both for:', type);
     }
 
     // Extract additional parameters based on command type
@@ -257,6 +268,7 @@ export class CommandParser {
         break;
     }
 
+    console.log('[CommandParser] Final command:', command);
     return command;
   }
 
