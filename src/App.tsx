@@ -17,14 +17,17 @@ function App() {
     canPause: true
   });
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [countdownActive, setCountdownActive] = useState(false);
   
   // Handle race end event - memoized to prevent infinite re-renders
   const handleRaceEnd = useCallback(() => {
+    console.log('[App] Race end event received');
     setGamePhase(prev => ({ ...prev, phase: 'post-race' }));
+    setCountdownActive(false);
   }, []);
   
   // Use the race engine hook
-  const { raceState, executeCommand, pauseRace, resumeRace, resetRace, startRace } = useRaceEngine({ 
+  const { raceState, executeCommand, pauseRace, resumeRace, resetRace } = useRaceEngine({ 
     gamePhase, 
     onRaceEnd: handleRaceEnd 
   });
@@ -39,13 +42,16 @@ function App() {
     isTTSSupported
   } = useVoiceSystem(raceState);
 
+  // Countdown timer effect - only runs when countdown is active
   useEffect(() => {
-    // Only start countdown if not in onboarding
-    if (!showOnboarding) {
+    if (countdownActive && gamePhase.phase === 'pre-race') {
+      console.log('[App] Starting countdown timer');
       const countdown = setInterval(() => {
         setGamePhase(prev => {
           if (prev.timeRemaining <= 1) {
             clearInterval(countdown);
+            setCountdownActive(false);
+            console.log('[App] Countdown finished, starting race');
             return { ...prev, phase: 'race', timeRemaining: 0 };
           }
           return { ...prev, timeRemaining: prev.timeRemaining - 1 };
@@ -56,7 +62,7 @@ function App() {
         clearInterval(countdown);
       };
     }
-  }, [showOnboarding]);
+  }, [countdownActive, gamePhase.phase]);
 
   // Handle voice commands by passing them to the race engine and generating responses
   const handleVoiceCommand = useCallback(async (command: VoiceCommand) => {
@@ -88,24 +94,38 @@ function App() {
 
   // Handle reset
   const handleReset = useCallback(() => {
+    console.log('[App] Reset button clicked');
     resetRace();
-    setGamePhase(prev => ({ ...prev, phase: 'pre-race', timeRemaining: 10 }));
+    setGamePhase({ phase: 'pre-race', timeRemaining: 10, canPause: true });
+    setCountdownActive(false);
     stopAllAudio();
   }, [resetRace, stopAllAudio]);
+
+  // Handle start race button
+  const handleStartRace = useCallback(() => {
+    if (gamePhase.phase === 'pre-race') {
+      console.log('[App] Start race button clicked');
+      setCountdownActive(true);
+      setGamePhase(prev => ({ ...prev, timeRemaining: 10 }));
+    }
+  }, [gamePhase.phase]);
 
   // Handle strategy suggestion request
   const handleRequestStrategy = useCallback(async () => {
     await generateStrategySuggestion();
   }, [generateStrategySuggestion]);
 
-  const handleOnboardingComplete = () => {
+  const handleOnboardingComplete = useCallback(() => {
+    console.log('[App] Onboarding completed');
     setShowOnboarding(false);
-  };
+  }, []);
 
   // Show onboarding flow first
   if (showOnboarding) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
+
+  console.log('[App] Current game phase:', gamePhase.phase, 'countdownActive:', countdownActive);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pit-wall to-track-green text-white font-racing relative">
@@ -306,7 +326,7 @@ function App() {
       {gamePhase.phase === 'pre-race' && (
         <div className="fixed bottom-4 left-4 z-30 flex gap-2">
           <button
-            onClick={startRace}
+            onClick={handleStartRace}
             className="btn-secondary"
           >
             🏁 Start Race
@@ -321,7 +341,7 @@ function App() {
       )}
 
       {/* Pre-race Countdown Overlay */}
-      {gamePhase.phase === 'pre-race' && (
+      {gamePhase.phase === 'pre-race' && countdownActive && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
           <div className="text-center">
             <div className="text-8xl font-bold text-f1-red mb-4 animate-pulse">

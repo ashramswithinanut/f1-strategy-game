@@ -11,61 +11,74 @@ interface UseRaceEngineProps {
 export const useRaceEngine = ({ gamePhase, onRaceEnd }: UseRaceEngineProps) => {
   const [raceState, setRaceState] = useState<RaceState>(mockRaceState);
   const raceEngineRef = useRef<RaceEngine | null>(null);
+  const isInitializedRef = useRef(false);
+  const onRaceEndRef = useRef(onRaceEnd);
 
+  // Update the onRaceEnd ref when it changes
   useEffect(() => {
-    // Initialize race engine with mock data
-    console.log('[useRaceEngine] Initializing race engine with mock data:', mockRaceState);
-    raceEngineRef.current = new RaceEngine(mockRaceState);
-    
-    // Set up race engine event listeners
-    raceEngineRef.current.on('raceStateUpdated', (updatedState: RaceState) => {
-      console.log('[useRaceEngine] Race state updated:', updatedState.currentLap, '/', updatedState.totalLaps);
-      setRaceState(updatedState);
-    });
-    
-    raceEngineRef.current.on('eventTriggered', (event: any) => {
-      console.log('[useRaceEngine] Race event triggered:', event);
-    });
-    
-    raceEngineRef.current.on('raceStarted', () => {
-      console.log('[useRaceEngine] Race started event received');
-    });
-    
-    raceEngineRef.current.on('raceEnded', () => {
-      console.log('[useRaceEngine] Race ended event received');
-      if (onRaceEnd) {
-        onRaceEnd();
-      }
-    });
-    
+    onRaceEndRef.current = onRaceEnd;
+  }, [onRaceEnd]);
+
+  // Initialize race engine only once - never cleanup unless component unmounts
+  useEffect(() => {
+    if (!isInitializedRef.current) {
+      console.log('[useRaceEngine] ONE-TIME INITIALIZATION - Creating race engine');
+      
+      const engine = new RaceEngine(mockRaceState);
+      raceEngineRef.current = engine;
+      isInitializedRef.current = true;
+      
+      // Set up event listeners
+      engine.on('raceStateUpdated', (updatedState: RaceState) => {
+        console.log('[useRaceEngine] Race state updated:', updatedState.currentLap, '/', updatedState.totalLaps);
+        setRaceState(updatedState);
+      });
+      
+      engine.on('eventTriggered', (event: any) => {
+        console.log('[useRaceEngine] Race event triggered:', event);
+      });
+      
+      engine.on('raceStarted', () => {
+        console.log('[useRaceEngine] Race started event received');
+      });
+      
+      engine.on('raceEnded', () => {
+        console.log('[useRaceEngine] Race ended event received');
+        if (onRaceEndRef.current) {
+          onRaceEndRef.current();
+        }
+      });
+      
+      engine.on('raceReset', (resetState: RaceState) => {
+        console.log('[useRaceEngine] Race reset event received');
+        setRaceState(resetState);
+      });
+
+      console.log('[useRaceEngine] Race engine initialized successfully');
+    }
+
+    // Only cleanup on component unmount (empty dependency array ensures this)
     return () => {
-      if (raceEngineRef.current) {
+      console.log('[useRaceEngine] COMPONENT UNMOUNTING - Cleaning up race engine');
+      if (raceEngineRef.current && isInitializedRef.current) {
         raceEngineRef.current.stop();
+        raceEngineRef.current = null;
+        isInitializedRef.current = false;
       }
     };
-  }, []);
+  }, []); // Empty dependency array - only run once
 
-  // Start race engine when race phase begins
+  // Handle game phase changes
   useEffect(() => {
+    if (!raceEngineRef.current) return;
+    
     console.log('[useRaceEngine] Game phase changed to:', gamePhase.phase);
-    if (gamePhase.phase === 'race' && raceEngineRef.current) {
+    
+    if (gamePhase.phase === 'race') {
       console.log('[useRaceEngine] Starting race engine...');
       raceEngineRef.current.start();
     }
   }, [gamePhase.phase]);
-
-  // Update the onRaceEnd callback when it changes
-  useEffect(() => {
-    if (raceEngineRef.current) {
-      raceEngineRef.current.off('raceEnded');
-      raceEngineRef.current.on('raceEnded', () => {
-        console.log('[useRaceEngine] Race ended event received');
-        if (onRaceEnd) {
-          onRaceEnd();
-        }
-      });
-    }
-  }, [onRaceEnd]);
 
   const executeCommand = useCallback((command: any) => {
     if (raceEngineRef.current) {
@@ -87,12 +100,14 @@ export const useRaceEngine = ({ gamePhase, onRaceEnd }: UseRaceEngineProps) => {
 
   const resetRace = useCallback(() => {
     if (raceEngineRef.current) {
+      console.log('[useRaceEngine] Manual reset requested');
       raceEngineRef.current.reset();
     }
   }, []);
 
   const startRace = useCallback(() => {
     if (raceEngineRef.current) {
+      console.log('[useRaceEngine] Manual start requested');
       raceEngineRef.current.start();
     }
   }, []);

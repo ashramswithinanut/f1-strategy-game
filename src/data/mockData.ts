@@ -22,7 +22,7 @@ export const mockDrivers: Driver[] = [
     id: 'driver-2', 
     name: 'Alex Thunder',
     team: 'volley',
-    position: 5,
+    position: 4,
     lapTime: 87.891,
     bestLap: 87.234,
     tyreCompound: 'medium',
@@ -65,6 +65,22 @@ export const mockDrivers: Driver[] = [
     isPlayer: false,
     status: 'racing',
     speed: 246
+  },
+  {
+    id: 'driver-5',
+    name: 'Storm Driver 2',
+    team: 'storm',
+    position: 5,
+    lapTime: 88.156,
+    bestLap: 87.456,
+    tyreCompound: 'medium',
+    tyreAge: 10,
+    fuel: 70,
+    morale: 86,
+    aggression: 80,
+    isPlayer: false,
+    status: 'racing',
+    speed: 240
   }
 ];
 
@@ -90,7 +106,7 @@ export const mockTeams: Team[] = [
     id: 'storm',
     name: 'Storm Racing',
     color: '#1E3A8A',
-    drivers: ['driver-3'],
+    drivers: ['driver-3', 'driver-5'],
     constructorPoints: 198,
     strategy: {
       tyreStrategy: [

@@ -9,7 +9,20 @@ export class RaceEngine {
 
   constructor(initialState: RaceState) {
     this.raceState = { ...initialState };
-    console.log(`[RaceEngine] Constructor - currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}, isActive=${this.raceState.isActive}`);
+    console.log(`[RaceEngine] Constructor START - currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}, isActive=${this.raceState.isActive}`);
+    
+    // Ensure we start in a valid state
+    if (this.raceState.currentLap > this.raceState.totalLaps) {
+      console.warn(`[RaceEngine] Constructor - Invalid state: currentLap (${this.raceState.currentLap}) > totalLaps (${this.raceState.totalLaps}), resetting`);
+      this.raceState.currentLap = 1;
+    }
+    
+    // Ensure we start in pre-race state
+    this.raceState.isActive = false;
+    this.raceState.isPaused = false;
+    this.isRunning = false;
+    
+    console.log(`[RaceEngine] Constructor COMPLETE - Initialized in pre-race state`);
   }
 
   // TODO: Computer 3 - Implement race simulation engine
@@ -25,7 +38,10 @@ export class RaceEngine {
   public start(): void {
     console.log(`[RaceEngine] Start called - isRunning=${this.isRunning}, currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}`);
     
-    if (this.isRunning) return;
+    if (this.isRunning) {
+      console.log(`[RaceEngine] Start called but race is already running - ignoring`);
+      return;
+    }
     
     this.isRunning = true;
     this.raceState.isActive = true;
@@ -50,6 +66,7 @@ export class RaceEngine {
     }, this.lapDuration);
     
     this.emit('raceStarted', this.raceState);
+    console.log(`[RaceEngine] Race started successfully`);
   }
 
   public pause(): void {
@@ -77,6 +94,12 @@ export class RaceEngine {
   public stop(): void {
     console.log(`[RaceEngine] Stop called - isRunning=${this.isRunning}, currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}`);
     
+    // Don't stop if not running
+    if (!this.isRunning && !this.raceState.isActive) {
+      console.log(`[RaceEngine] Stop called but race is not running - ignoring`);
+      return;
+    }
+    
     this.isRunning = false;
     this.raceState.isActive = false;
     
@@ -92,8 +115,14 @@ export class RaceEngine {
   public reset(): void {
     console.log(`[RaceEngine] Reset called - resetting race to initial state`);
     
-    // Stop the race first
-    this.stop();
+    // Stop the race engine cleanly without triggering raceEnded
+    this.isRunning = false;
+    this.raceState.isActive = false;
+    
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
     
     // Reset race state to initial values
     this.raceState.currentLap = 1;
@@ -139,6 +168,9 @@ export class RaceEngine {
       }
     ];
     
+    console.log(`[RaceEngine] Race reset complete - currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}`);
+    
+    // Emit reset event instead of raceEnded
     this.emit('raceReset', this.raceState);
   }
 
@@ -187,7 +219,12 @@ export class RaceEngine {
     // - Check for random events
     // - Update weather conditions
     
-    console.log(`[RaceEngine] Before increment: currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}`);
+    console.log(`[RaceEngine] updateRaceState called - Before increment: currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}, isRunning=${this.isRunning}`);
+    
+    if (!this.isRunning) {
+      console.log(`[RaceEngine] updateRaceState called but race is not running - ignoring`);
+      return;
+    }
     
     this.raceState.currentLap++;
     this.raceState.raceTime += this.lapDuration / 1000;
