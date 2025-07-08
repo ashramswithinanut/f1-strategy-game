@@ -35,6 +35,16 @@
     @apply bg-f1-green hover:bg-green-400 text-f1-black;
   }
   
+  .btn-secondary {
+    @apply bg-f1-silver hover:bg-gray-300 text-f1-black font-bold py-2 px-4 rounded-lg;
+    @apply transition-all duration-200 transform hover:scale-105;
+    @apply border-2 border-f1-yellow shadow-lg;
+  }
+  
+  .btn-secondary:active {
+    @apply scale-95;
+  }
+  
   /* Track and Strategy Panels */
   .panel {
     @apply bg-pit-wall/90 border-2 border-f1-silver/30 rounded-lg p-4;
@@ -95,7 +105,7 @@
   }
   
   .tyre-hard {
-    @apply bg-tyre-hard text-black;
+    @apply bg-tyre-hard;
   }
   
   .tyre-inter {
@@ -103,7 +113,35 @@
   }
   
   .tyre-wet {
-    @apply bg-tyre-wet text-black;
+    @apply bg-tyre-wet;
+  }
+  
+  /* Weather Effects */
+  .weather-rain {
+    animation: rainDrop 0.5s infinite linear;
+  }
+  
+  @keyframes rainDrop {
+    0% { transform: translateY(-10px); opacity: 0; }
+    50% { opacity: 0.8; }
+    100% { transform: translateY(10px); opacity: 0; }
+  }
+  
+  /* Pit Stop Indicators */
+  .pit-indicator {
+    @apply text-volley-yellow animate-pulse;
+    text-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
+  }
+  
+  /* Enhanced Glow Effects */
+  .text-glow {
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  }
+  
+  /* Speed Display */
+  .speed-display {
+    @apply text-f1-green font-bold;
+    text-shadow: 0 0 3px rgba(0, 255, 65, 0.5);
   }
   
   /* Voice Input Indicators */

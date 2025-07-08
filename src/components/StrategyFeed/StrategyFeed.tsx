@@ -40,12 +40,16 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSy
             <div className="flex items-center gap-2">
               <div className="text-f1-yellow font-bold">P{driver.position}</div>
               <div className="text-f1-silver">{driver.name}</div>
+              {driver.status === 'pitting' && (
+                <div className="text-volley-yellow text-xs animate-pulse">🔧 PITTING</div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <div className={`tyre-indicator tyre-${driver.tyreCompound}`}>
                 {driver.tyreCompound[0].toUpperCase()}
               </div>
               <div className="text-f1-green text-sm">{driver.lapTime.toFixed(3)}</div>
+              <div className="text-f1-blue text-xs">{driver.speed}km/h</div>
             </div>
           </div>
         ))}
@@ -62,6 +66,12 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSy
           <div className="data-row">
             <span className="data-label">Constructor Position</span>
             <span className="data-value">P3</span>
+          </div>
+          <div className="data-row">
+            <span className="data-label">Avg Speed</span>
+            <span className="data-value">
+              {Math.round(playerDrivers.reduce((sum, d) => sum + d.speed, 0) / playerDrivers.length)}km/h
+            </span>
           </div>
         </div>
       </div>
@@ -91,7 +101,7 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSy
   };
 
   const renderStrategyPanel = () => {
-    const playerTeam = raceState.teams.find(t => t.name === 'Scuderia Tempesta');
+    const playerTeam = raceState.teams.find(t => t.name === 'Scuderia Volley');
     
     return (
       <div className="space-y-2">

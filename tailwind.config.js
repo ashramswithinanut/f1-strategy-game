@@ -16,8 +16,8 @@ export default {
         'f1-blue': '#0070F3',
         
         // Team Colors
-        'tempesta-red': '#DC143C',
-        'tempesta-gold': '#FFD700',
+        'volley-yellow': '#FFD700',
+        'volley-gold': '#FFA500',
         'storm-blue': '#1E3A8A',
         'valkyrie-purple': '#7C3AED',
         

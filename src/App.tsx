@@ -25,7 +25,7 @@ function App() {
   }, []);
   
   // Use the race engine hook
-  const { raceState, executeCommand } = useRaceEngine({ 
+  const { raceState, executeCommand, pauseRace, resumeRace, resetRace, startRace } = useRaceEngine({ 
     gamePhase, 
     onRaceEnd: handleRaceEnd 
   });
@@ -74,12 +74,23 @@ function App() {
   // Handle pause/resume
   const handlePauseToggle = useCallback(() => {
     if (gamePhase.phase === 'race') {
-      setGamePhase(prev => ({ ...prev, canPause: !prev.canPause }));
-      if (!gamePhase.canPause) {
+      if (raceState.isPaused) {
+        resumeRace();
+      } else {
+        pauseRace();
+      }
+      if (!raceState.isPaused) {
         stopAllAudio();
       }
     }
-  }, [gamePhase.phase, gamePhase.canPause, stopAllAudio]);
+  }, [raceState.isPaused, pauseRace, resumeRace, stopAllAudio]);
+
+  // Handle reset
+  const handleReset = useCallback(() => {
+    resetRace();
+    setGamePhase(prev => ({ ...prev, phase: 'pre-race', timeRemaining: 10 }));
+    stopAllAudio();
+  }, [resetRace, stopAllAudio]);
 
   // Handle strategy suggestion request
   const handleRequestStrategy = useCallback(async () => {
@@ -89,11 +100,11 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pit-wall to-track-green text-white font-racing">
       {/* Header */}
-      <header className="bg-tempesta-red/20 border-b border-f1-silver/30 p-4">
+      <header className="bg-volley-yellow/20 border-b border-f1-silver/30 p-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold text-glow">
-              🏁 SCUDERIA TEMPESTA - PIT WALL
+              🏁 SCUDERIA VOLLEY - PIT WALL
             </h1>
             <div className="text-f1-yellow">
               LAP {raceState.currentLap}/{raceState.totalLaps}
@@ -172,12 +183,36 @@ function App() {
 
       {/* Game Controls */}
       {gamePhase.phase === 'race' && (
-        <div className="fixed bottom-4 left-4 z-30">
+        <div className="fixed bottom-4 left-4 z-30 flex gap-2">
           <button
             onClick={handlePauseToggle}
             className="btn-secondary"
           >
-            {gamePhase.canPause ? '⏸️ Pause' : '▶️ Resume'}
+            {raceState.isPaused ? '▶️ Resume' : '⏸️ Pause'}
+          </button>
+          <button
+            onClick={handleReset}
+            className="btn-secondary"
+          >
+            🔄 Reset
+          </button>
+        </div>
+      )}
+
+      {/* Pre-race Controls */}
+      {gamePhase.phase === 'pre-race' && (
+        <div className="fixed bottom-4 left-4 z-30 flex gap-2">
+          <button
+            onClick={startRace}
+            className="btn-secondary"
+          >
+            🏁 Start Race
+          </button>
+          <button
+            onClick={handleReset}
+            className="btn-secondary"
+          >
+            🔄 Reset
           </button>
         </div>
       )}

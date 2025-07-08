@@ -31,6 +31,7 @@ export interface Driver {
   aggression: number;
   isPlayer: boolean;
   status: DriverStatus;
+  speed: number; // Current speed in km/h
 }
 
 export interface Team {

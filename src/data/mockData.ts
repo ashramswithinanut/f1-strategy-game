@@ -5,7 +5,7 @@ export const mockDrivers: Driver[] = [
   {
     id: 'driver-1',
     name: 'Marco Rossi',
-    team: 'tempesta',
+    team: 'volley',
     position: 3,
     lapTime: 87.234,
     bestLap: 86.891,
@@ -15,12 +15,13 @@ export const mockDrivers: Driver[] = [
     morale: 85,
     aggression: 75,
     isPlayer: true,
-    status: 'racing'
+    status: 'racing',
+    speed: 245
   },
   {
     id: 'driver-2', 
     name: 'Alex Thunder',
-    team: 'tempesta',
+    team: 'volley',
     position: 5,
     lapTime: 87.891,
     bestLap: 87.234,
@@ -30,7 +31,8 @@ export const mockDrivers: Driver[] = [
     morale: 78,
     aggression: 82,
     isPlayer: true,
-    status: 'racing'
+    status: 'racing',
+    speed: 242
   },
   {
     id: 'driver-3',
@@ -45,7 +47,8 @@ export const mockDrivers: Driver[] = [
     morale: 92,
     aggression: 88,
     isPlayer: false,
-    status: 'racing'
+    status: 'racing',
+    speed: 248
   },
   {
     id: 'driver-4',
@@ -60,16 +63,17 @@ export const mockDrivers: Driver[] = [
     morale: 89,
     aggression: 85,
     isPlayer: false,
-    status: 'racing'
+    status: 'racing',
+    speed: 246
   }
 ];
 
 // Mock Teams
 export const mockTeams: Team[] = [
   {
-    id: 'tempesta',
-    name: 'Scuderia Tempesta',
-    color: '#DC143C',
+    id: 'volley',
+    name: 'Scuderia Volley',
+    color: '#FFD700',
     drivers: ['driver-1', 'driver-2'],
     constructorPoints: 145,
     strategy: {

@@ -125,15 +125,43 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
 
   const renderDriverMarker = (driver: Driver) => {
     const isPlayer = driver.isPlayer;
-    const teamColor = driver.team === 'tempesta' ? '#DC143C' : 
+    const teamColor = driver.team === 'volley' ? '#FFD700' : 
                      driver.team === 'storm' ? '#1E3A8A' : '#7C3AED';
     const position = getDriverPosition(driver);
+    const isPitting = driver.status === 'pitting';
     
-    // Add pulsing animation for player drivers
+    // Add pulsing animation for player drivers and different animation for pitting cars
     const pulseAnimation = isPlayer ? 'animate-pulse' : '';
+    const pittingAnimation = isPitting ? 'animate-bounce' : '';
     
     return (
       <g key={driver.id}>
+        {/* Pit stop indicator */}
+        {isPitting && (
+          <g>
+            <circle
+              cx={position.x}
+              cy={position.y}
+              r="8"
+              fill="none"
+              stroke="#FFD700"
+              strokeWidth="2"
+              strokeDasharray="4,4"
+              className="animate-spin"
+            />
+            <text
+              x={position.x}
+              y={position.y - 12}
+              textAnchor="middle"
+              fontSize="6"
+              fill="#FFD700"
+              fontWeight="bold"
+            >
+              PIT
+            </text>
+          </g>
+        )}
+        
         <circle
           cx={position.x}
           cy={position.y}
@@ -141,7 +169,7 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
           fill={teamColor}
           stroke={isPlayer ? '#FFD700' : '#C0C0C0'}
           strokeWidth="1"
-          className={`transition-all duration-100 ${pulseAnimation}`}
+          className={`transition-all duration-100 ${pulseAnimation} ${pittingAnimation}`}
         />
         <text
           x={position.x}
@@ -173,6 +201,27 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
           opacity="0.3"
           className="transition-all duration-300"
         />
+        
+        {/* Speed display */}
+        <text
+          x={position.x + 8}
+          y={position.y - 2}
+          fontSize="6"
+          fill="#00FF41"
+          fontWeight="bold"
+          className="transition-all duration-100"
+        >
+          {driver.speed}
+        </text>
+        <text
+          x={position.x + 8}
+          y={position.y + 4}
+          fontSize="4"
+          fill="#00FF41"
+          className="transition-all duration-100"
+        >
+          km/h
+        </text>
       </g>
     );
   };
@@ -480,15 +529,94 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
             opacity="0.8"
           />
 
-          {/* Weather Overlay */}
+          {/* Enhanced Weather Overlay */}
           {raceState.weather !== 'sunny' && (
             <g>
+              {/* Base weather overlay */}
               <rect x="0" y="0" width="350" height="220" fill="rgba(100,149,237,0.15)"/>
-              <text x="175" y="20" textAnchor="middle" fill="#4169E1" fontSize="12" fontWeight="bold">
-                {raceState.weather === 'light-rain' ? '🌧️ LIGHT RAIN' : 
-                 raceState.weather === 'heavy-rain' ? '⛈️ HEAVY RAIN' : 
-                 raceState.weather === 'storm' ? '🌩️ STORM' : '☁️ CLOUDY'}
-              </text>
+              
+              {/* Weather-specific effects */}
+              {raceState.weather === 'light-rain' && (
+                <g>
+                  {/* Light rain drops */}
+                  {Array.from({ length: 25 }).map((_, i) => (
+                    <g key={i}>
+                      <line
+                        x1={20 + (i * 13) % 320}
+                        y1={10 + (i * 7) % 200}
+                        x2={22 + (i * 13) % 320}
+                        y2={16 + (i * 7) % 200}
+                        stroke="#4169E1"
+                        strokeWidth="1"
+                        opacity="0.6"
+                        className="animate-pulse"
+                      />
+                    </g>
+                  ))}
+                  <text x="175" y="20" textAnchor="middle" fill="#4169E1" fontSize="12" fontWeight="bold">
+                    🌧️ LIGHT RAIN
+                  </text>
+                </g>
+              )}
+              
+              {raceState.weather === 'heavy-rain' && (
+                <g>
+                  {/* Heavy rain drops */}
+                  {Array.from({ length: 50 }).map((_, i) => (
+                    <g key={i}>
+                      <line
+                        x1={10 + (i * 7) % 340}
+                        y1={5 + (i * 4) % 210}
+                        x2={13 + (i * 7) % 340}
+                        y2={12 + (i * 4) % 210}
+                        stroke="#1E3A8A"
+                        strokeWidth="1.5"
+                        opacity="0.8"
+                        className="animate-pulse"
+                      />
+                    </g>
+                  ))}
+                  <text x="175" y="20" textAnchor="middle" fill="#1E3A8A" fontSize="12" fontWeight="bold">
+                    ⛈️ HEAVY RAIN
+                  </text>
+                </g>
+              )}
+              
+              {raceState.weather === 'storm' && (
+                <g>
+                  {/* Storm effects */}
+                  {Array.from({ length: 75 }).map((_, i) => (
+                    <g key={i}>
+                      <line
+                        x1={5 + (i * 5) % 345}
+                        y1={2 + (i * 3) % 215}
+                        x2={9 + (i * 5) % 345}
+                        y2={11 + (i * 3) % 215}
+                        stroke="#0F1419"
+                        strokeWidth="2"
+                        opacity="0.9"
+                        className="animate-pulse"
+                      />
+                    </g>
+                  ))}
+                  <text x="175" y="20" textAnchor="middle" fill="#0F1419" fontSize="12" fontWeight="bold">
+                    🌩️ STORM
+                  </text>
+                </g>
+              )}
+              
+              {raceState.weather === 'cloudy' && (
+                <g>
+                  {/* Cloudy overlay */}
+                  <circle cx="50" cy="40" r="20" fill="rgba(180,180,180,0.3)" />
+                  <circle cx="80" cy="35" r="25" fill="rgba(180,180,180,0.3)" />
+                  <circle cx="270" cy="45" r="18" fill="rgba(180,180,180,0.3)" />
+                  <circle cx="300" cy="40" r="22" fill="rgba(180,180,180,0.3)" />
+                  <text x="175" y="20" textAnchor="middle" fill="#4169E1" fontSize="12" fontWeight="bold">
+                    ☁️ CLOUDY
+                  </text>
+                </g>
+              )}
             </g>
           )}
 
@@ -501,8 +629,8 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
       <div className="mt-4 grid grid-cols-2 gap-4 text-xs">
         <div className="space-y-1">
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-tempesta-red border border-f1-yellow"></div>
-            <span>Scuderia Tempesta</span>
+            <div className="w-3 h-3 rounded-full bg-volley-yellow border border-f1-yellow"></div>
+            <span>Scuderia Volley</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-full bg-storm-blue border border-f1-silver"></div>

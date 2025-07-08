@@ -73,9 +73,37 @@ export const useRaceEngine = ({ gamePhase, onRaceEnd }: UseRaceEngineProps) => {
     }
   }, []);
 
+  const pauseRace = useCallback(() => {
+    if (raceEngineRef.current) {
+      raceEngineRef.current.pause();
+    }
+  }, []);
+
+  const resumeRace = useCallback(() => {
+    if (raceEngineRef.current) {
+      raceEngineRef.current.resume();
+    }
+  }, []);
+
+  const resetRace = useCallback(() => {
+    if (raceEngineRef.current) {
+      raceEngineRef.current.reset();
+    }
+  }, []);
+
+  const startRace = useCallback(() => {
+    if (raceEngineRef.current) {
+      raceEngineRef.current.start();
+    }
+  }, []);
+
   return {
     raceState,
     executeCommand,
+    pauseRace,
+    resumeRace,
+    resetRace,
+    startRace,
     raceEngine: raceEngineRef.current
   };
 }; 

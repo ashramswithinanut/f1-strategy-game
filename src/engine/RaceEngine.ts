@@ -76,6 +76,51 @@ export class RaceEngine {
     this.emit('raceEnded', this.raceState);
   }
 
+  public reset(): void {
+    console.log(`[RaceEngine] Reset called - resetting race to initial state`);
+    
+    // Stop the race first
+    this.stop();
+    
+    // Reset race state to initial values
+    this.raceState.currentLap = 1;
+    this.raceState.raceTime = 0;
+    this.raceState.weather = 'cloudy';
+    this.raceState.trackCondition = 'dry';
+    this.raceState.flags = 'green';
+    this.raceState.isActive = false;
+    this.raceState.isPaused = false;
+    
+    // Reset drivers to initial state
+    this.raceState.drivers.forEach(driver => {
+      driver.lapTime = 87.0 + (Math.random() - 0.5) * 0.5;
+      driver.bestLap = 99.999;
+      driver.tyreAge = 0;
+      driver.fuel = 100;
+      driver.morale = 80 + Math.random() * 20;
+      driver.aggression = 70 + Math.random() * 30;
+      driver.status = 'racing';
+      driver.speed = 0; // Add speed tracking
+    });
+    
+    // Reset positions
+    this.updatePositions();
+    
+    // Clear events except initial ones
+    this.raceState.events = [
+      {
+        id: 'event-reset',
+        type: 'flag',
+        lap: 1,
+        message: 'Race reset - Ready to start!',
+        severity: 'info',
+        timestamp: Date.now()
+      }
+    ];
+    
+    this.emit('raceReset', this.raceState);
+  }
+
   public executeCommand(command: VoiceCommand): void {
     // TODO: Computer 3 - Implement command execution
     // This should:
@@ -168,6 +213,12 @@ export class RaceEngine {
       
       // Apply driver morale/aggression
       baseLapTime += this.getDriverPerformanceModifier(driver);
+      
+      // Calculate speed based on lap time (approx. 5.891 km Silverstone)
+      // Speed = distance / time * 3.6 (m/s to km/h conversion)
+      const lapDistanceKm = 5.891;
+      const lapTimeHours = baseLapTime / 3600;
+      driver.speed = Math.round(lapDistanceKm / lapTimeHours);
       
       // Update driver data
       driver.lapTime = baseLapTime;
@@ -329,19 +380,29 @@ export class RaceEngine {
     const targetDrivers = this.getTargetDrivers(command);
     
     targetDrivers.forEach(driver => {
+      // Set driver status to pitting
+      driver.status = 'pitting';
+      driver.speed = 60; // Pit lane speed limit
+      
+      // Reset tyre and fuel data
       driver.tyreAge = 0;
-      driver.tyreCompound = command.params.tyreCompound || 'medium';
+      driver.tyreCompound = command.params?.tyreCompound || 'medium';
       driver.fuel = 100;
-      driver.status = 'racing';
       
       // Pit stop time penalty
       driver.lapTime += 25; // 25 second pit stop
       
       this.addEvent({
         type: 'pit-stop',
-        message: `${driver.name} pits for ${driver.tyreCompound} tyres`,
+        message: `🔧 ${driver.name} pits for ${driver.tyreCompound} tyres`,
         severity: 'info'
       });
+      
+      // Return to racing status after pit stop
+      setTimeout(() => {
+        driver.status = 'racing';
+        driver.speed = 0; // Will be recalculated on next update
+      }, 3000); // Visual pit stop duration
     });
   }
 
