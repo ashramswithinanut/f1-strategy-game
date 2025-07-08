@@ -79,22 +79,42 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSy
   };
 
   const renderEventsFeed = () => {
+    const recentEvents = raceState.events.slice(-10).reverse();
+    
     return (
       <div className="space-y-2">
         <div className="panel-header text-sm">📢 RACE EVENTS</div>
         <div className="max-h-64 overflow-y-auto space-y-2">
-          {raceState.events.slice(-10).reverse().map(event => (
-            <div key={event.id} className="data-row">
-              <div className="flex items-center gap-2">
-                <div className="text-f1-yellow text-xs">L{event.lap}</div>
-                <div className={`w-2 h-2 rounded-full ${
-                  event.severity === 'critical' ? 'bg-f1-red' :
-                  event.severity === 'warning' ? 'bg-f1-yellow' : 'bg-f1-green'
-                }`}></div>
-              </div>
-              <div className="text-f1-silver text-sm">{event.message}</div>
+          {recentEvents.length === 0 ? (
+            <div className="text-center text-f1-silver/50 py-4">
+              <div className="text-xs">No race events yet</div>
+              <div className="text-xs mt-1">Events will appear as the race progresses</div>
             </div>
-          ))}
+          ) : (
+            recentEvents.map((event, index) => (
+              <div key={event.id || `event-${index}`} className="data-row">
+                <div className="flex items-center gap-2">
+                  <div className="text-f1-yellow text-xs font-bold">L{event.lap}</div>
+                  <div className={`w-2 h-2 rounded-full ${
+                    event.severity === 'critical' ? 'bg-f1-red' :
+                    event.severity === 'warning' ? 'bg-f1-yellow' : 'bg-f1-green'
+                  }`}></div>
+                  <div className="text-f1-silver/70 text-xs">
+                    {event.type.toUpperCase()}
+                  </div>
+                </div>
+                <div className="text-f1-silver text-sm">{event.message}</div>
+              </div>
+            ))
+          )}
+        </div>
+        
+        {/* Event Stats */}
+        <div className="mt-3 pt-2 border-t border-f1-silver/20">
+          <div className="flex justify-between text-xs text-f1-silver/70">
+            <span>Total Events: {raceState.events.length}</span>
+            <span>Current Lap: {raceState.currentLap}</span>
+          </div>
         </div>
       </div>
     );

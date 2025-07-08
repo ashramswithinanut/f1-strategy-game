@@ -131,19 +131,43 @@ export const mockRaceState: RaceState = {
   events: [
     {
       id: 'event-1',
-      type: 'pit-stop',
+      type: 'flag',
       lap: 1,
-      message: 'Race is starting...',
+      message: '🏁 Pre-race preparation complete - drivers ready!',
       severity: 'info',
-      timestamp: Date.now() - 180000
+      timestamp: Date.now() - 300000
     },
     {
       id: 'event-2',
       type: 'weather',
       lap: 1,
-      message: 'Weather looks good for racing',
+      message: '🌤️ Weather conditions: Cloudy with potential for rain',
+      severity: 'info',
+      timestamp: Date.now() - 240000
+    },
+    {
+      id: 'event-3',
+      type: 'flag',
+      lap: 1,
+      message: '🏎️ Formation lap completed - grid positions confirmed',
+      severity: 'info',
+      timestamp: Date.now() - 180000
+    },
+    {
+      id: 'event-4',
+      type: 'drs',
+      lap: 1,
+      message: '💨 DRS zones activated for qualifying - strategic overtaking available',
       severity: 'info',
       timestamp: Date.now() - 120000
+    },
+    {
+      id: 'event-5',
+      type: 'flag',
+      lap: 1,
+      message: '🔴 All systems go - waiting for race start signal',
+      severity: 'warning',
+      timestamp: Date.now() - 60000
     }
   ],
   isActive: false,

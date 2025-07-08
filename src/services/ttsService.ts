@@ -23,12 +23,12 @@ export class TTSService {
   private getVoiceForSpeaker(speaker: AudioSpeaker): SpeechSynthesisVoice | null {
     // Voice preferences for different speakers
     const voicePreferences: Record<AudioSpeaker, string[]> = {
-      'commentator': ['Google UK English Male', 'Microsoft David', 'Alex', 'Daniel (Enhanced)', 'Google UK English'],
-      'driver1': ['Google UK English Male', 'Microsoft Mark', 'Daniel', 'Alex'],
-      'driver2': ['Google US English', 'Microsoft Zira', 'Samantha', 'Karen'],
-      'engineer': ['Google UK English Female', 'Microsoft Hazel', 'Victoria', 'Samantha'],
-      'pit-crew': ['Google US English', 'Microsoft David', 'Alex', 'Tom'],
-      'race-director': ['Google UK English Male', 'Microsoft Mark', 'Daniel', 'Alex']
+      'commentator': ['Google UK English Male', 'Microsoft David', 'Daniel (Enhanced)', 'Alex', 'Google UK English'],
+      'driver1': ['Microsoft Mark', 'Google US English Male', 'Daniel', 'Tom', 'Ralph'],
+      'driver2': ['Google US English', 'Microsoft Zira', 'Samantha', 'Karen', 'Victoria'],
+      'engineer': ['Google UK English Female', 'Microsoft Hazel', 'Victoria', 'Samantha', 'Fiona'],
+      'pit-crew': ['Google US English', 'Microsoft Ryan', 'Tom', 'Ralph', 'Alex'],
+      'race-director': ['Microsoft Paul', 'Google UK English Male', 'Daniel', 'Alex', 'George']
     };
 
     const preferences = voicePreferences[speaker] || ['Google UK English Male'];

@@ -30,6 +30,19 @@ export class RaceEngine {
     this.isRunning = true;
     this.raceState.isActive = true;
     
+    // Add race start events
+    this.addEvent({
+      type: 'flag',
+      message: '🏁 RACE START! Lights out and away we go!',
+      severity: 'critical'
+    });
+    
+    this.addEvent({
+      type: 'flag',
+      message: `🏎️ ${this.raceState.totalLaps} laps ahead - Scuderia Volley ready to race!`,
+      severity: 'info'
+    });
+    
     console.log(`[RaceEngine] Starting race loop with ${this.lapDuration}ms intervals`);
     
     this.intervalId = window.setInterval(() => {
@@ -112,7 +125,15 @@ export class RaceEngine {
         id: 'event-reset',
         type: 'flag',
         lap: 1,
-        message: 'Race reset - Ready to start!',
+        message: '🔄 Race reset! Ready for pre-race preparation.',
+        severity: 'info',
+        timestamp: Date.now()
+      },
+      {
+        id: 'event-prep',
+        type: 'flag',
+        lap: 1,
+        message: '🏁 Scuderia Volley drivers preparing for race start.',
         severity: 'info',
         timestamp: Date.now()
       }
@@ -182,9 +203,23 @@ export class RaceEngine {
     // Update weather
     this.updateWeather();
     
+    // Add lap progression events
+    if (this.raceState.currentLap % 3 === 0) {
+      this.addEvent({
+        type: 'flag',
+        message: `Lap ${this.raceState.currentLap} - Race is heating up! Strategic decisions crucial now.`,
+        severity: 'info'
+      });
+    }
+    
     // Check for race completion
     if (this.raceState.currentLap > this.raceState.totalLaps) {
       console.log(`[RaceEngine] Race finished! currentLap=${this.raceState.currentLap}, totalLaps=${this.raceState.totalLaps}`);
+      this.addEvent({
+        type: 'flag',
+        message: `🏁 RACE FINISHED! Final lap completed!`,
+        severity: 'critical'
+      });
       this.stop();
       return;
     }
@@ -324,7 +359,7 @@ export class RaceEngine {
     // - Virtual safety cars
     // - Weather changes
     
-    const eventChance = 0.15; // 15% chance per lap
+    const eventChance = 0.25; // 25% chance per lap (increased from 15%)
     if (Math.random() < eventChance) {
       this.triggerRandomEvent();
     }
@@ -332,10 +367,16 @@ export class RaceEngine {
 
   private triggerRandomEvent(): void {
     const events = [
-      { type: 'mechanical', message: 'Mechanical issue for a rival team' },
-      { type: 'crash', message: 'Yellow flag - incident at turn 3' },
-      { type: 'weather', message: 'Weather conditions changing' },
-      { type: 'flag', message: 'Safety car deployed' }
+      { type: 'mechanical', message: '⚙️ Mechanical issue for Storm Racing - opportunity ahead!', severity: 'warning' as const },
+      { type: 'crash', message: '🚨 Yellow flag - incident at turn 3! Safety car possible.', severity: 'critical' as const },
+      { type: 'weather', message: '🌦️ Weather conditions changing - strategy calls needed!', severity: 'warning' as const },
+      { type: 'flag', message: '🟡 Safety car deployed - race neutralized!', severity: 'critical' as const },
+      { type: 'pit-stop', message: '🔧 Valkyrie GP pits - undercut attempt incoming!', severity: 'info' as const },
+      { type: 'drs', message: '💨 DRS enabled - overtaking opportunities increase!', severity: 'info' as const },
+      { type: 'flag', message: '🏁 Virtual Safety Car - maintain gaps and speed!', severity: 'warning' as const },
+      { type: 'mechanical', message: '⚡ Power unit issue reported by rival team.', severity: 'warning' as const },
+      { type: 'weather', message: '🌩️ Dark clouds gathering - rain forecast updated!', severity: 'info' as const },
+      { type: 'flag', message: '📻 Race control message - all drivers maintain position.', severity: 'info' as const }
     ];
     
     const randomEvent = events[Math.floor(Math.random() * events.length)];
@@ -345,7 +386,7 @@ export class RaceEngine {
       type: randomEvent.type as any,
       lap: this.raceState.currentLap,
       message: randomEvent.message,
-      severity: 'warning',
+      severity: randomEvent.severity,
       timestamp: Date.now()
     };
     
