@@ -51,6 +51,33 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSy
               <div className="text-f1-green text-sm">{driver.lapTime.toFixed(3)}</div>
               <div className="text-f1-blue text-xs">{driver.speed}km/h</div>
             </div>
+            
+            {/* Driver Morale Bar */}
+            <div className="mt-1 flex items-center gap-2">
+              <div className="text-xs text-f1-silver">Morale:</div>
+              <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-500 ${
+                    driver.morale >= 80 ? 'bg-f1-green' :
+                    driver.morale >= 60 ? 'bg-f1-yellow' :
+                    driver.morale >= 40 ? 'bg-orange-500' : 'bg-f1-red'
+                  }`}
+                  style={{ width: `${driver.morale}%` }}
+                />
+              </div>
+              <div className={`text-xs font-bold ${
+                driver.morale >= 80 ? 'text-f1-green' :
+                driver.morale >= 60 ? 'text-f1-yellow' :
+                driver.morale >= 40 ? 'text-orange-500' : 'text-f1-red'
+              }`}>
+                {Math.round(driver.morale)}%
+              </div>
+              <div className="text-xs">
+                {driver.morale >= 80 ? '😊' :
+                 driver.morale >= 60 ? '😐' :
+                 driver.morale >= 40 ? '😟' : '😤'}
+              </div>
+            </div>
           </div>
         ))}
         
@@ -71,6 +98,17 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSy
             <span className="data-label">Avg Speed</span>
             <span className="data-value">
               {Math.round(playerDrivers.reduce((sum, d) => sum + d.speed, 0) / playerDrivers.length)}km/h
+            </span>
+          </div>
+          
+          {/* Team Morale Summary */}
+          <div className="data-row">
+            <span className="data-label">Team Morale</span>
+            <span className={`data-value font-bold ${
+              playerDrivers.reduce((sum, d) => sum + d.morale, 0) / playerDrivers.length >= 70 ? 'text-f1-green' :
+              playerDrivers.reduce((sum, d) => sum + d.morale, 0) / playerDrivers.length >= 50 ? 'text-f1-yellow' : 'text-f1-red'
+            }`}>
+              {Math.round(playerDrivers.reduce((sum, d) => sum + d.morale, 0) / playerDrivers.length)}%
             </span>
           </div>
         </div>
@@ -122,11 +160,62 @@ const StrategyFeed: React.FC<StrategyFeedProps> = ({ raceState, uiState, voiceSy
 
   const renderStrategyPanel = () => {
     const playerTeam = raceState.teams.find(t => t.name === 'Scuderia Volley');
+    const playerDrivers = raceState.drivers.filter(d => d.isPlayer);
+    const podiumDrivers = playerDrivers.filter(d => d.position <= 3);
+    const topTenDrivers = playerDrivers.filter(d => d.position <= 10);
     
     return (
       <div className="space-y-2">
         <div className="panel-header text-sm">🎯 STRATEGY</div>
         
+        {/* Race Goals */}
+        <div className="bg-volley-yellow/20 border border-volley-yellow/50 rounded p-2">
+          <div className="text-xs text-volley-yellow font-bold mb-2">🏆 RACE OBJECTIVES</div>
+          
+          <div className="space-y-1">
+            {/* Podium Goal */}
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-f1-silver">At least one driver on podium</div>
+              <div className={`text-xs font-bold ${
+                podiumDrivers.length > 0 ? 'text-f1-green' : 'text-f1-red'
+              }`}>
+                {podiumDrivers.length > 0 ? '✅' : '❌'} {podiumDrivers.length}/1
+              </div>
+            </div>
+            
+            {/* Top 10 Goal */}
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-f1-silver">Both drivers finish in top 10</div>
+              <div className={`text-xs font-bold ${
+                topTenDrivers.length === 2 ? 'text-f1-green' : 'text-f1-yellow'
+              }`}>
+                {topTenDrivers.length === 2 ? '✅' : '⚠️'} {topTenDrivers.length}/2
+              </div>
+            </div>
+            
+            {/* Overall Progress */}
+            <div className="mt-2 pt-1 border-t border-volley-yellow/30">
+              <div className="text-xs text-f1-silver mb-1">Overall Progress:</div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-500 ${
+                      podiumDrivers.length > 0 && topTenDrivers.length === 2 ? 'bg-f1-green' :
+                      podiumDrivers.length > 0 || topTenDrivers.length === 2 ? 'bg-f1-yellow' : 'bg-f1-red'
+                    }`}
+                    style={{ 
+                      width: `${((podiumDrivers.length > 0 ? 50 : 0) + (topTenDrivers.length === 2 ? 50 : topTenDrivers.length * 25))}%` 
+                    }}
+                  />
+                </div>
+                <div className="text-xs font-bold text-volley-yellow">
+                  {Math.round(((podiumDrivers.length > 0 ? 50 : 0) + (topTenDrivers.length === 2 ? 50 : topTenDrivers.length * 25)))}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* AI Strategy Suggestion */}
         {voiceSystemState.lastStrategySuggestion && (
           <div className="bg-f1-green/20 border border-f1-green/50 rounded p-2">
