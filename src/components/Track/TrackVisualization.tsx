@@ -9,6 +9,24 @@ interface TrackVisualizationProps {
 const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, gamePhase }) => {
   const [positionSwapAnimating, setPositionSwapAnimating] = useState<string[]>([]);
   const [lastPositions, setLastPositions] = useState<{[key: string]: number}>({});
+  const [continuousTime, setContinuousTime] = useState(0);
+
+  // Continuous time update for smooth animation
+  useEffect(() => {
+    if (gamePhase === 'race' && raceState.isActive) {
+      const interval = setInterval(() => {
+        setContinuousTime(prev => prev + 0.016); // 60 FPS updates (16ms)
+      }, 16);
+      return () => clearInterval(interval);
+    }
+  }, [gamePhase, raceState.isActive]);
+
+  // Reset continuous time when race resets
+  useEffect(() => {
+    if (!raceState.isActive) {
+      setContinuousTime(0);
+    }
+  }, [raceState.isActive]);
 
   // Track position changes for swap animation
   useEffect(() => {
@@ -56,27 +74,77 @@ const TrackVisualization: React.FC<TrackVisualizationProps> = ({ raceState, game
       return { x: 70 + (driver.position * 15), y: 175 };
     }
     
-    // Super simple circular track for smooth movement
-    const centerX = 175;
-    const centerY = 140;
-    const radius = 100;
+    // Define the actual Silverstone track path points from the SVG
+    const trackPoints = [
+      // Section 1 (start/finish straight and first corners)
+      { x: 60, y: 140 },   // Start/finish line
+      { x: 60, y: 80 },    // Turn 1 approach
+      { x: 80, y: 70 },    // Turn 1
+      { x: 100, y: 70 },   // Turn 2
+      { x: 120, y: 75 },   // Turn 3
+      { x: 140, y: 80 },   // Turn 4
+      { x: 160, y: 85 },   // Turn 5
+      { x: 180, y: 95 },   // Turn 6
+      { x: 200, y: 105 },  // Turn 7
+      
+      // Section 2 (middle section)
+      { x: 220, y: 120 },  // Turn 8
+      { x: 240, y: 140 },  // Turn 9
+      { x: 260, y: 150 },  // Turn 10
+      { x: 280, y: 160 },  // Turn 11
+      { x: 300, y: 170 },  // Turn 12
+      { x: 310, y: 180 },  // Turn 13
+      { x: 300, y: 190 },  // Turn 14
+      
+      // Section 3 (back straight and final corners)
+      { x: 280, y: 195 },  // Turn 15
+      { x: 260, y: 190 },  // Turn 16
+      { x: 240, y: 185 },  // Turn 17
+      { x: 220, y: 180 },  // Turn 18
+      { x: 200, y: 175 },  // Final corner complex
+      { x: 180, y: 170 },
+      { x: 160, y: 165 },
+      { x: 140, y: 160 },
+      { x: 120, y: 155 },
+      { x: 100, y: 150 },
+      { x: 80, y: 145 },
+      { x: 60, y: 140 }    // Back to start
+    ];
     
-    // Get smooth time-based progress
-    const raceTime = raceState.raceTime || 0;
+    // Use continuous time for smooth movement
     const lapDuration = 10; // 10 seconds per lap
     
-    // Calculate smooth angle around circle (0 to 2π)
-    const baseAngle = (raceTime / lapDuration) * 2 * Math.PI;
+    // Calculate smooth progress around the track (0 to 1)
+    const baseProgress = (continuousTime / lapDuration) % 1;
     
-    // Small offset for each driver position
-    const positionOffset = (driver.position - 1) * 0.1;
-    const finalAngle = baseAngle - positionOffset;
+    // Add small position offset for each driver (spread them out)
+    const positionOffset = (driver.position - 1) * 0.015;
+    const adjustedProgress = (baseProgress + positionOffset) % 1;
     
-    // Calculate smooth circular position
-    const x = centerX + Math.cos(finalAngle) * radius;
-    const y = centerY + Math.sin(finalAngle) * radius;
+    // Calculate position along track path with smooth interpolation
+    const totalSegments = trackPoints.length - 1; // Don't count the duplicate start/end point
+    const segmentProgress = adjustedProgress * totalSegments;
+    const currentSegment = Math.floor(segmentProgress);
+    const segmentRatio = segmentProgress - currentSegment;
     
-    return { x, y };
+    // Get current and next points for smooth interpolation
+    const currentPoint = trackPoints[currentSegment % trackPoints.length];
+    const nextPoint = trackPoints[(currentSegment + 1) % trackPoints.length];
+    
+    // Smooth interpolation between points
+    const x = currentPoint.x + (nextPoint.x - currentPoint.x) * segmentRatio;
+    const y = currentPoint.y + (nextPoint.y - currentPoint.y) * segmentRatio;
+    
+    // Add minimal side offset for racing line variation
+    const sideOffset = ((driver.position - 1) % 2 === 0 ? 1 : -1) * 1.5;
+    const direction = Math.atan2(nextPoint.y - currentPoint.y, nextPoint.x - currentPoint.x);
+    const offsetX = Math.cos(direction + Math.PI / 2) * sideOffset;
+    const offsetY = Math.sin(direction + Math.PI / 2) * sideOffset;
+    
+    return { 
+      x: x + offsetX, 
+      y: y + offsetY 
+    };
   };
 
   const renderDriverCar = (driver: any, index: number) => {
