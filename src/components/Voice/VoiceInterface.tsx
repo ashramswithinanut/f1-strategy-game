@@ -17,38 +17,76 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   const [confidence, setConfidence] = useState<number>(0);
   const [isSupported, setIsSupported] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
     // Check if Web Speech API is supported
-    setIsSupported(speechAPI.isSupported());
+    const supported = speechAPI.isSupported();
+    setIsSupported(supported);
+    
+    // Check microphone permission status
+    if (supported) {
+      checkMicrophonePermission();
+    }
   }, []);
 
-  const startListening = useCallback(() => {
+  const checkMicrophonePermission = async () => {
+    try {
+      const permission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      setHasPermission(permission.state === 'granted');
+      
+      permission.onchange = () => {
+        setHasPermission(permission.state === 'granted');
+      };
+    } catch (error) {
+      console.warn('Could not check microphone permission:', error);
+      setHasPermission(null);
+    }
+  };
+
+  const requestPermissionAndStart = async () => {
     if (!isSupported) {
       console.log('Speech API not supported, using mock mode');
       mockVoiceCommand();
       return;
     }
-    
+
     setError(null);
     setTranscript('');
+    
+    // Request microphone permission first
+    const permissionGranted = await speechAPI.requestMicrophonePermission();
+    
+    if (!permissionGranted) {
+      setError('Microphone access denied. Please allow microphone access in your browser settings.');
+      return;
+    }
+
+    setHasPermission(true);
     
     const success = speechAPI.startListening(
       (result) => {
         setTranscript(result.transcript);
         setConfidence(result.confidence);
         
+        console.log(`[Voice] Received: "${result.transcript}" (final: ${result.isFinal})`);
+        
         // Parse final results into commands
         if (result.isFinal) {
           const command = commandParser.parseCommand(result.transcript);
           if (command) {
+            console.log('[Voice] Command parsed:', command);
             onCommand(command);
             setTranscript('');
             onStateChange(false);
+          } else {
+            console.log('[Voice] No command recognized in:', result.transcript);
+            setError('Command not recognized. Try: "Box both drivers" or "Push now"');
           }
         }
       },
       (error) => {
+        console.error('[Voice] Recognition error:', error);
         setError(error);
         onStateChange(false);
       }
@@ -56,7 +94,13 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
     
     if (success) {
       onStateChange(true);
+    } else {
+      setError('Failed to start voice recognition');
     }
+  };
+
+  const startListening = useCallback(() => {
+    requestPermissionAndStart();
   }, [isSupported, onCommand, onStateChange]);
 
   const stopListening = useCallback(() => {
@@ -64,6 +108,7 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
     onStateChange(false);
     setTranscript('');
     setConfidence(0);
+    setError(null);
   }, [onStateChange]);
 
   const handleKeyPress = useCallback((event: React.KeyboardEvent) => {
@@ -105,12 +150,55 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
     }, 1500);
   }, [onCommand, onStateChange]);
 
+  const getMicrophoneButtonColor = () => {
+    if (isListening) {
+      return 'bg-f1-red border-f1-yellow animate-pulse-fast';
+    }
+    
+    if (!isSupported) {
+      return 'bg-f1-silver border-f1-silver opacity-50';
+    }
+    
+    if (hasPermission === false) {
+      return 'bg-f1-yellow border-f1-red';
+    }
+    
+    return 'bg-f1-green border-f1-silver hover:scale-110';
+  };
+
+  const getMicrophoneButtonTitle = () => {
+    if (!isSupported) {
+      return 'Voice not supported. Using demo mode.';
+    }
+    
+    if (hasPermission === false) {
+      return 'Microphone access denied. Click to request permission.';
+    }
+    
+    if (isListening) {
+      return 'Click or press Space to stop listening';
+    }
+    
+    return 'Click or press Space to start voice input';
+  };
+
   return (
     <div 
       className="fixed bottom-4 right-4 z-40"
       onKeyDown={handleKeyPress}
       tabIndex={0}
     >
+      {/* Permission Status Indicator */}
+      {hasPermission === false && (
+        <div className="absolute bottom-20 right-0 bg-f1-red/90 border border-f1-yellow rounded-lg p-3 text-sm text-white max-w-64">
+          <div className="font-bold mb-1">🎤 Microphone Access Required</div>
+          <div className="text-xs">
+            Please allow microphone access to use voice commands. 
+            Click the microphone button to request permission.
+          </div>
+        </div>
+      )}
+
       {/* Test TTS Button (Debug) */}
       {!isListening && (
         <div className="fixed bottom-4 left-20 z-30">
@@ -140,12 +228,8 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
       {/* Voice Control Button */}
       <button
         onClick={isListening ? stopListening : startListening}
-        className={`w-16 h-16 rounded-full border-4 transition-all duration-300 ${
-          isListening 
-            ? 'bg-f1-red border-f1-yellow animate-pulse-fast' 
-            : 'bg-f1-green border-f1-silver hover:scale-110'
-        }`}
-        title={isSupported ? 'Click or press Space to talk' : 'Demo Mode - Click to simulate'}
+        className={`w-16 h-16 rounded-full border-4 transition-all duration-300 ${getMicrophoneButtonColor()}`}
+        title={getMicrophoneButtonTitle()}
       >
         {isListening ? '🎙️' : '🎤'}
       </button>
@@ -172,7 +256,7 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
           
           {error && (
             <div className="text-xs text-f1-red">
-              Error: {error}
+              {error}
             </div>
           )}
           
@@ -193,17 +277,10 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
           <div>• "Swap positions"</div>
           <div>• "Tell [driver] to [action]"</div>
           <div className="mt-2 text-f1-yellow">
-            Press SPACE or click mic
+            {!isSupported ? 'Demo Mode Only' : 'Press SPACE or click mic'}
           </div>
         </div>
       )}
-
-      {/* API Status Indicator */}
-      <div className="absolute -top-2 -left-2">
-        <div className={`w-4 h-4 rounded-full border-2 border-white/50 ${
-          isSupported ? 'bg-f1-green' : 'bg-f1-yellow'
-        }`} title={isSupported ? 'Voice API Ready' : 'Demo Mode'}></div>
-      </div>
     </div>
   );
 };

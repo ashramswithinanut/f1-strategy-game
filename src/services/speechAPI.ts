@@ -19,18 +19,10 @@ export class SpeechAPI {
   private onError: ((error: string) => void) | null = null;
 
   constructor() {
-    // TODO: Computer 2 - Initialize Web Speech API
-    // Check for browser support and create recognition instance
     this.initializeRecognition();
   }
 
   private initializeRecognition() {
-    // TODO: Computer 2 - Implement speech recognition initialization
-    // This should:
-    // - Check for webkitSpeechRecognition or SpeechRecognition support
-    // - Set up event handlers
-    // - Configure recognition parameters
-    
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
@@ -44,10 +36,11 @@ export class SpeechAPI {
     this.recognition.lang = 'en-US';
 
     this.recognition.onresult = (event: any) => {
-      // TODO: Computer 2 - Process speech recognition results
       const result = event.results[event.results.length - 1];
       const transcript = result[0].transcript;
-      const confidence = result[0].confidence;
+      const confidence = result[0].confidence || 0.8;
+      
+      console.log(`[Speech] Result: "${transcript}" (confidence: ${confidence})`);
       
       if (this.onResult) {
         this.onResult({
@@ -60,14 +53,56 @@ export class SpeechAPI {
 
     this.recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
+      
+      let errorMessage = 'Speech recognition error';
+      
+      switch (event.error) {
+        case 'not-allowed':
+          errorMessage = 'Microphone access denied. Please allow microphone access and try again.';
+          break;
+        case 'no-speech':
+          errorMessage = 'No speech detected. Please try again.';
+          break;
+        case 'audio-capture':
+          errorMessage = 'No microphone found. Please check your audio settings.';
+          break;
+        case 'network':
+          errorMessage = 'Network error. Please check your internet connection.';
+          break;
+        default:
+          errorMessage = `Speech recognition error: ${event.error}`;
+      }
+      
       if (this.onError) {
-        this.onError(event.error);
+        this.onError(errorMessage);
       }
     };
 
     this.recognition.onend = () => {
+      console.log('[Speech] Recognition ended');
       this.isListening = false;
     };
+
+    this.recognition.onstart = () => {
+      console.log('[Speech] Recognition started');
+      this.isListening = true;
+    };
+  }
+
+  public async requestMicrophonePermission(): Promise<boolean> {
+    try {
+      // Request microphone permission explicitly
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Stop the stream immediately, we just needed permission
+      stream.getTracks().forEach(track => track.stop());
+      
+      console.log('[Speech] Microphone permission granted');
+      return true;
+    } catch (error) {
+      console.error('[Speech] Microphone permission denied:', error);
+      return false;
+    }
   }
 
   public startListening(
@@ -76,6 +111,9 @@ export class SpeechAPI {
   ): boolean {
     if (!this.recognition) {
       console.error('Speech recognition not available');
+      if (onError) {
+        onError('Speech recognition not supported in this browser. Please use Chrome or Edge.');
+      }
       return false;
     }
 
@@ -88,11 +126,14 @@ export class SpeechAPI {
     this.onError = onError || null;
 
     try {
+      console.log('[Speech] Starting recognition...');
       this.recognition.start();
-      this.isListening = true;
       return true;
     } catch (error) {
       console.error('Failed to start speech recognition:', error);
+      if (onError) {
+        onError(`Failed to start speech recognition: ${error}`);
+      }
       return false;
     }
   }
@@ -102,6 +143,7 @@ export class SpeechAPI {
       return;
     }
 
+    console.log('[Speech] Stopping recognition...');
     this.recognition.stop();
     this.isListening = false;
     this.onResult = null;

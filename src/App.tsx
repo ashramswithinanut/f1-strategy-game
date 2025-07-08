@@ -381,6 +381,72 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Pre-race Setup Screen */}
+      {gamePhase.phase === 'pre-race' && (
+        <div className="fixed inset-0 bg-pit-wall/95 flex items-center justify-center z-50">
+          <div className="bg-track-gray border border-f1-silver rounded-lg p-8 max-w-2xl">
+            <div className="text-center mb-8">
+              <div className="text-4xl font-bold text-f1-yellow mb-2">🏁 Scuderia Volley</div>
+              <div className="text-xl text-f1-silver">Team Principal Interface</div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-6 mb-8">
+              <div>
+                <h3 className="text-lg font-bold text-f1-yellow mb-3">🎤 Voice Commands</h3>
+                <div className="space-y-2 text-sm text-f1-silver">
+                  <div>• "Box both drivers for soft tyres"</div>
+                  <div>• "Push now" / "Conserve fuel"</div>
+                  <div>• "Swap positions"</div>
+                  <div>• "Tell driver 1 to push"</div>
+                </div>
+                <div className="mt-4 p-3 bg-f1-blue/20 rounded border border-f1-blue/30">
+                  <div className="text-xs text-f1-blue font-bold mb-1">🔧 Setup Tips:</div>
+                  <div className="text-xs text-f1-silver">
+                    • Allow microphone access when prompted<br/>
+                    • Use Chrome or Edge for best results<br/>
+                    • Speak clearly and naturally<br/>
+                    • Press SPACE or click mic to start
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-bold text-f1-yellow mb-3">🏎️ Your Drivers</h3>
+                <div className="space-y-3">
+                  {raceState.drivers.filter(d => d.isPlayer).map(driver => (
+                    <div key={driver.id} className="flex items-center gap-3 p-3 bg-volley-yellow/10 rounded border border-volley-yellow/30">
+                      <div className="w-8 h-8 bg-volley-yellow rounded-full flex items-center justify-center font-bold text-black">
+                        {driver.position}
+                      </div>
+                      <div>
+                        <div className="font-bold text-f1-silver">{driver.name}</div>
+                        <div className="text-xs text-f1-silver/70">
+                          Morale: {driver.morale} | Speed: {driver.speed}km/h
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <button
+                onClick={handleStartRace}
+                disabled={countdownActive}
+                className="btn-primary text-xl px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {countdownActive ? 'Starting Race...' : 'Start Race'}
+              </button>
+              
+              <div className="mt-4 text-sm text-f1-silver/70">
+                Test your microphone using the voice button in the bottom right corner
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
