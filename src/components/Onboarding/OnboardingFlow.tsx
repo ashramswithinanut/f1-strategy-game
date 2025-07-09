@@ -29,6 +29,20 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
               every decision counts. The pressure is maximum and the stakes couldn't be higher.
             </p>
           </div>
+          
+          {/* Quick Start Option */}
+          <div className="bg-f1-green/20 border border-f1-green/50 rounded p-4">
+            <div className="text-f1-green font-bold mb-2">⚡ QUICK START</div>
+            <p className="text-f1-silver text-sm mb-3">
+              Already know how to play? Skip the briefing and jump straight to the race!
+            </p>
+            <button
+              onClick={onComplete}
+              className="btn-primary w-full"
+            >
+              🏁 Skip to Race Start
+            </button>
+          </div>
         </div>
       )
     },
@@ -284,12 +298,24 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
             ))}
           </div>
           
-          <button
-            onClick={nextStep}
-            className="racing-button primary px-4 py-2"
-          >
-            {currentStep === steps.length - 1 ? 'Start Race!' : 'Next →'}
-          </button>
+          <div className="flex gap-2">
+            {/* Quick Start Button on every step */}
+            {currentStep > 0 && (
+              <button
+                onClick={onComplete}
+                className="racing-button primary px-4 py-2 bg-f1-green/20 border-f1-green text-f1-green hover:bg-f1-green/30"
+              >
+                ⚡ Quick Start
+              </button>
+            )}
+            
+            <button
+              onClick={nextStep}
+              className="racing-button primary px-4 py-2"
+            >
+              {currentStep === steps.length - 1 ? 'Start Race!' : 'Next →'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
